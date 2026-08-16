@@ -19,7 +19,7 @@ const RANGES: Range[] = ["24H", "7D", "30D"];
 
 export function TemperatureIntelligence() {
   const [range, setRange] = useState<Range>("24H");
-  const [shipment, setShipment] = useState(SHIPMENTS[0].id);
+  const [shipment, setShipment] = useState(SHIPMENTS[0]!.id);
   const mounted = useMounted();
   const seed = useMemo(() => shipment.charCodeAt(shipment.length - 1) % 9, [shipment]);
   const data = useMemo(() => temperatureSeries(range, seed), [range, seed]);
