@@ -286,12 +286,12 @@ export interface RouteDef {
 /** Coordinates are percentages inside the stylised India map viewbox. */
 export const ROUTES: RouteDef[] = [
   {
-    id: "CG-10442",
-    from: "Delhi",
-    to: "Indore",
+    id: "CG-10458",
+    from: "Indore",
+    to: "Delhi",
     level: "critical",
-    a: { x: 36, y: 27 },
-    b: { x: 33, y: 47 },
+    a: { x: 33, y: 47 },
+    b: { x: 36, y: 27 },
     bend: -18,
   },
   {
