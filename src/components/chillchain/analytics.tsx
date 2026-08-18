@@ -20,7 +20,7 @@ import {
   RISK_DISTRIBUTION,
   humiditySeries,
   temperatureSeries,
-} from "@/lib/coldtrace-data";
+} from "@/lib/ChillChain-data";
 import { Reveal, Section, SectionHeading, useMounted } from "./primitives";
 
 const tooltipStyle = {

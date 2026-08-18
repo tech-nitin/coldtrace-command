@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ROUTES, type RiskLevel } from "@/lib/coldtrace-data";
+import { ROUTES, type RiskLevel } from "@/lib/ChillChain-data";
 import { LiveDot, Reveal, Section, SectionHeading } from "./primitives";
 
 const strokeFor: Record<RiskLevel, string> = {

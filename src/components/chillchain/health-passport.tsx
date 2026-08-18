@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { FileCheck2, MapPin, ShieldAlert, Thermometer, Timer, TrendingDown } from "lucide-react";
-import { PASSPORT, type RiskLevel } from "@/lib/coldtrace-data";
+import { PASSPORT, type RiskLevel } from "@/lib/ChillChain-data";
 import { Counter, Reveal, Section, SectionHeading, TiltCard } from "./primitives";
 
 const dot: Record<RiskLevel, string> = {
@@ -40,7 +40,7 @@ export function HealthPassport() {
               <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-accent/25 blur-3xl" />
               <div className="relative">
                 <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-primary-foreground/55">
-                  ColdTrace Passport
+                  ChillChain Passport
                 </p>
                 <p className="mt-4 font-display text-4xl font-bold tracking-tighter">{PASSPORT.id}</p>
                 <p className="mt-2 text-sm text-primary-foreground/75">{PASSPORT.batch}</p>

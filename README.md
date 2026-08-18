@@ -1,12 +1,12 @@
-# ColdTrace Command
+# ChillChain Command
 
 Create a completely new, premium and highly animated dashboard from scratch for our hackathon project:
 
-COLDTRACE AI
+ChillChain AI
 
 AI-Powered Cold-Chain Intelligence
 
-ColdTrace is an IoT + AI platform for monitoring temperature-sensitive agricultural shipments. An SHT40 temperature/humidity sensor connected to an ESP32 collects real-time data, which is sent to the backend and analyzed by an AI/ML risk engine.
+ChillChain is an IoT + AI platform for monitoring temperature-sensitive agricultural shipments. An SHT40 temperature/humidity sensor connected to an ESP32 collects real-time data, which is sent to the backend and analyzed by an AI/ML risk engine.
 
 The system detects abnormal temperature/humidity patterns, predicts spoilage risk, calculates shipment health, tracks shipments and recommends corrective actions.
 
@@ -94,7 +94,7 @@ Headline:
 
 Description:
 
-"ColdTrace transforms real-time IoT data into AI-powered shipment intelligence, helping detect risk and prevent cold-chain losses."
+"ChillChain transforms real-time IoT data into AI-powered shipment intelligence, helping detect risk and prevent cold-chain losses."
 
 Buttons:
 
@@ -280,7 +280,7 @@ Include:
 
 SHIPMENT HEALTH PASSPORT:
 
-Make this a signature ColdTrace feature.
+Make this a signature ChillChain feature.
 
 Title:
 
@@ -346,7 +346,7 @@ AI Risk Engine
 
 ↓
 
-ColdTrace Dashboard
+ChillChain Dashboard
 
 Show animated connection lines and online indicators.
 
@@ -400,15 +400,15 @@ Final feeling:
 
 PREMIUM + LIVE + INTELLIGENT + AGRITECH + LOGISTICS + IoT + AI
 
-This project was built with [Lovable](https://lovable.dev).
+This project was built with [](https://.dev).
 
-## Build with Lovable
+## Build with
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/2f5aa2c8-d80e-4219-a314-8f79d63dda50).
+Continue developing this project in the [ editor](https://.dev/projects/2f5aa2c8-d80e-4219-a314-8f79d63dda50).
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+- **Ship faster**: describe what you want to build and handles the code.
+- **Stay in sync**: every change made in is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into , ready for your next prompt.
 
 ## Development
 

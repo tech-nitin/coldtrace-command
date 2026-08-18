@@ -1,7 +1,7 @@
 import { motion, useMotionValue, useSpring, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
-import type { RiskLevel } from "@/lib/coldtrace-data";
+import type { RiskLevel } from "@/lib/ChillChain-data";
 
 export function useMounted() {
   const [m, setM] = useState(false);

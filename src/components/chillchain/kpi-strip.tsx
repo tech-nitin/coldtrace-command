@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { KPIS } from "@/lib/coldtrace-data";
+import { KPIS } from "@/lib/ChillChain-data";
 import { Counter } from "./primitives";
 
 const tone = {

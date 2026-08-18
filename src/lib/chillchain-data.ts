@@ -1,5 +1,5 @@
 /**
- * ColdTrace AI — mock data layer.
+ * ChillChain AI — mock data layer.
  *
  * Everything the dashboard renders flows through these types and functions.
  * When the real ESP32 -> backend -> AI risk engine pipeline is ready, swap the
@@ -329,5 +329,5 @@ export const PIPELINE = [
   { key: "WIFI", label: "Wi-Fi", note: "MQTT uplink", metric: "-58 dBm" },
   { key: "BACKEND", label: "Backend", note: "Ingest + timeseries", metric: "42 ms p95" },
   { key: "AI", label: "AI Risk Engine", note: "Anomaly + spoilage model", metric: "0.94 AUC" },
-  { key: "DASH", label: "ColdTrace Dashboard", note: "Command center", metric: "Live" },
+  { key: "DASH", label: "ChillChain Dashboard", note: "Command center", metric: "Live" },
 ];

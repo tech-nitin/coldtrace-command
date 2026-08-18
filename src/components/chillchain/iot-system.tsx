@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Brain, Cpu, LayoutDashboard, Server, Thermometer, Wifi } from "lucide-react";
-import { PIPELINE } from "@/lib/coldtrace-data";
+import { PIPELINE } from "@/lib/ChillChain-data";
 import { LiveDot, Reveal, Section, SectionHeading } from "./primitives";
 
 const icons = [Thermometer, Cpu, Wifi, Server, Brain, LayoutDashboard];
@@ -83,7 +83,7 @@ export function ClosingBanner() {
             Built for the field. Ready for the <span className="text-gradient-primary">real ESP32 fleet</span>.
           </h2>
           <p className="max-w-xl text-muted-foreground">
-            ColdTrace AI — IoT telemetry, AI spoilage prediction and operator-grade intelligence for
+            ChillChain AI — IoT telemetry, AI spoilage prediction and operator-grade intelligence for
             temperature-sensitive agriculture.
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-3">

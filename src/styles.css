@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * ColdTrace AI design system — deep forest green + emerald on warm off-white.
+ * ChillChain AI design system — deep forest green + emerald on warm off-white.
  * All colors use oklch. Never hardcode colors in components.
  */
 
@@ -119,23 +119,17 @@
   --sidebar-ring: oklch(0.62 0.145 160);
 
   /* gradients + shadows */
-  --gradient-canvas: radial-gradient(
-      1200px 600px at 85% -10%,
+  --gradient-canvas: radial-gradient(1200px 600px at 85% -10%,
       color-mix(in oklab, var(--accent) 16%, transparent),
-      transparent 70%
-    ),
-    radial-gradient(
-      900px 500px at -5% 20%,
+      transparent 70%),
+    radial-gradient(900px 500px at -5% 20%,
       color-mix(in oklab, var(--primary) 10%, transparent),
-      transparent 70%
-    );
+      transparent 70%);
   --gradient-primary: linear-gradient(135deg, var(--primary), var(--primary-glow));
-  --gradient-deep: linear-gradient(
-    150deg,
-    oklch(0.24 0.045 158),
-    oklch(0.32 0.07 162) 55%,
-    oklch(0.4 0.09 168)
-  );
+  --gradient-deep: linear-gradient(150deg,
+      oklch(0.24 0.045 158),
+      oklch(0.32 0.07 162) 55%,
+      oklch(0.4 0.09 168));
   --shadow-soft: 0 1px 2px oklch(0.3 0.04 158 / 0.05), 0 12px 30px -18px oklch(0.3 0.04 158 / 0.28);
   --shadow-float: 0 30px 60px -30px oklch(0.3 0.06 158 / 0.35),
     0 2px 6px oklch(0.3 0.04 158 / 0.06);
@@ -200,6 +194,7 @@
     transform: scale(0.7);
     opacity: 0.65;
   }
+
   100% {
     transform: scale(2.4);
     opacity: 0;
@@ -213,10 +208,12 @@
 }
 
 @keyframes ct-float {
+
   0%,
   100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }

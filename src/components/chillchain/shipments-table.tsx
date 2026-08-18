@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowUpRight, Droplets, Thermometer } from "lucide-react";
-import { SHIPMENTS, type RiskLevel } from "@/lib/coldtrace-data";
+import { SHIPMENTS, type RiskLevel } from "@/lib/ChillChain-data";
 import { LevelPill, Reveal, Section, SectionHeading } from "./primitives";
 
 const barTone: Record<RiskLevel, string> = {

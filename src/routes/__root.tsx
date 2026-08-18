@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TopNav } from "../components/chillchain/nav";
 import {
   Outlet,
   Link,
@@ -10,7 +11,6 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
   return (
@@ -38,7 +38,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
-    reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    reportError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
   return (
@@ -77,7 +77,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "ColdTrace AI — Cold-Chain Intelligence" },
+      { title: "ChillChain AI — Cold-Chain Intelligence" },
       { name: "description", content: "AI-powered monitoring for temperature-sensitive agricultural shipments." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -122,7 +122,9 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+      <TopNav />
+
+      {/* All pages render here */}
       <Outlet />
     </QueryClientProvider>
   );

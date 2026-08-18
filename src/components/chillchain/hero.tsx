@@ -80,7 +80,7 @@ export function Hero() {
           </motion.h1>
 
           <motion.p variants={item} className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-            ColdTrace transforms real-time IoT data into AI-powered shipment intelligence, helping detect
+            ChillChain transforms real-time IoT data into AI-powered shipment intelligence, helping detect
             risk and prevent cold-chain losses.
           </motion.p>
 
@@ -103,24 +103,29 @@ export function Hero() {
           </motion.div>
 
           <motion.dl
-            variants={item}
-            className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-border pt-8"
-          >
-            {[
-              { k: "Shipments monitored", v: 24, s: "" },
-              { k: "Sensor uptime", v: 99.4, s: "%", d: 1 },
-              { k: "Losses prevented", v: 12, s: "L", p: "₹" },
-            ].map((s) => (
-              <div key={s.k}>
-                <dd className="font-display text-2xl font-bold">
-                  <Counter to={s.v} decimals={s.d ?? 0} suffix={s.s} prefix={s.p ?? ""} />
-                </dd>
-                <dt className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  {s.k}
-                </dt>
-              </div>
-            ))}
-          </motion.dl>
+  variants={item}
+  className="mt-12 grid max-w-lg grid-cols-3 gap-6 border-t border-border pt-8"
+>
+  {[
+    { k: "Active shipments", v: 24, s: "" },
+    { k: "On-time rate", v: 96.4, s: "%", d: 1 },
+    { k: "Fleet health", v: 78, s: "/100" },
+  ].map((s) => (
+    <div key={s.k}>
+      <dd className="font-display text-2xl font-bold">
+        <Counter
+          to={s.v}
+          decimals={s.d ?? 0}
+          suffix={s.s}
+        />
+      </dd>
+
+      <dt className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {s.k}
+      </dt>
+    </div>
+  ))}
+</motion.dl>
         </motion.div>
 
         <div className="relative">
@@ -145,15 +150,19 @@ export function Hero() {
             </svg>
 
             <motion.img
-              src={truck}
-              alt="Refrigerated ColdTrace delivery truck carrying crates of fresh fruits and vegetables"
-              width={1280}
-              height={960}
-              className="absolute inset-0 h-full w-full object-contain drop-shadow-[0_40px_45px_oklch(0.2_0.04_158/0.45)]"
-              initial={{ x: 60, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 1.1, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-            />
+  src={truck}
+  alt="Refrigerated ChillChain delivery truck carrying crates of fresh fruits and vegetables"
+  width={1280}
+  height={960}
+  className="absolute left-[8%] top-[2%] h-[96%] w-[100%] object-contain drop-shadow-[0_40px_45px_oklch(0.2_0.04_158/0.45)]"
+  initial={{ x: 60, opacity: 0 }}
+  animate={{ x: 0, opacity: 1 }}
+  transition={{
+    duration: 1.1,
+    delay: 0.15,
+    ease: [0.16, 1, 0.3, 1],
+  }}
+/>
 
             <FloatingStat
               icon={Thermometer}

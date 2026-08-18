@@ -1,7 +1,7 @@
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Brain, Clock, Gauge, HeartPulse, Sparkles, Wrench } from "lucide-react";
-import { AI_ASSESSMENT } from "@/lib/coldtrace-data";
+import { AI_ASSESSMENT } from "@/lib/ChillChain-data";
 import { Counter, Reveal, Section } from "./primitives";
 
 function RiskGauge({ value }: { value: number }) {

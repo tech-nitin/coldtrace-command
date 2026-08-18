@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, BellRing, CheckCircle2, Droplets, Route, WifiOff } from "lucide-react";
-import { ALERTS, type RiskLevel } from "@/lib/coldtrace-data";
+import { ALERTS, type RiskLevel } from "@/lib/ChillChain-data";
 import { LiveDot, Reveal, Section, SectionHeading } from "./primitives";
 
 const iconFor: Record<string, typeof AlertTriangle> = {
