@@ -10,14 +10,27 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AiInsightsRouteImport } from './routes/ai-insights'
+import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as DevicesRouteImport } from './routes/devices'
 import { Route as LiveTrackingRouteImport } from './routes/live-tracking'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ShipmentsRouteImport } from './routes/shipments'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiInsightsRoute = AiInsightsRouteImport.update({
+  id: '/ai-insights',
+  path: '/ai-insights',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlertsRoute = AlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
@@ -35,6 +48,11 @@ const LiveTrackingRoute = LiveTrackingRouteImport.update({
   path: '/live-tracking',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShipmentsRoute = ShipmentsRouteImport.update({
   id: '/shipments',
   path: '/shipments',
@@ -43,45 +61,76 @@ const ShipmentsRoute = ShipmentsRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai-insights': typeof AiInsightsRoute
+  '/alerts': typeof AlertsRoute
   '/analytics': typeof AnalyticsRoute
   '/devices': typeof DevicesRoute
   '/live-tracking': typeof LiveTrackingRoute
+  '/profile': typeof ProfileRoute
   '/shipments': typeof ShipmentsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-insights': typeof AiInsightsRoute
+  '/alerts': typeof AlertsRoute
   '/analytics': typeof AnalyticsRoute
   '/devices': typeof DevicesRoute
   '/live-tracking': typeof LiveTrackingRoute
+  '/profile': typeof ProfileRoute
   '/shipments': typeof ShipmentsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai-insights': typeof AiInsightsRoute
+  '/alerts': typeof AlertsRoute
   '/analytics': typeof AnalyticsRoute
   '/devices': typeof DevicesRoute
   '/live-tracking': typeof LiveTrackingRoute
+  '/profile': typeof ProfileRoute
   '/shipments': typeof ShipmentsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analytics' | '/devices' | '/live-tracking' | '/shipments'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analytics' | '/devices' | '/live-tracking' | '/shipments'
-  id:
-    | '__root__'
+  fullPaths:
     | '/'
+    | '/ai-insights'
+    | '/alerts'
     | '/analytics'
     | '/devices'
     | '/live-tracking'
+    | '/profile'
+    | '/shipments'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/ai-insights'
+    | '/alerts'
+    | '/analytics'
+    | '/devices'
+    | '/live-tracking'
+    | '/profile'
+    | '/shipments'
+  id:
+    | '__root__'
+    | '/'
+    | '/ai-insights'
+    | '/alerts'
+    | '/analytics'
+    | '/devices'
+    | '/live-tracking'
+    | '/profile'
     | '/shipments'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiInsightsRoute: typeof AiInsightsRoute
+  AlertsRoute: typeof AlertsRoute
   AnalyticsRoute: typeof AnalyticsRoute
   DevicesRoute: typeof DevicesRoute
   LiveTrackingRoute: typeof LiveTrackingRoute
+  ProfileRoute: typeof ProfileRoute
   ShipmentsRoute: typeof ShipmentsRoute
 }
 
@@ -92,6 +141,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-insights': {
+      id: '/ai-insights'
+      path: '/ai-insights'
+      fullPath: '/ai-insights'
+      preLoaderRoute: typeof AiInsightsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alerts': {
+      id: '/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AlertsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics': {
@@ -115,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LiveTrackingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shipments': {
       id: '/shipments'
       path: '/shipments'
@@ -127,9 +197,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiInsightsRoute: AiInsightsRoute,
+  AlertsRoute: AlertsRoute,
   AnalyticsRoute: AnalyticsRoute,
   DevicesRoute: DevicesRoute,
   LiveTrackingRoute: LiveTrackingRoute,
+  ProfileRoute: ProfileRoute,
   ShipmentsRoute: ShipmentsRoute,
 }
 export const routeTree = rootRouteImport

@@ -45,7 +45,7 @@ export function AlertCenter() {
         }
       />
 
-      <div className="mt-12 grid gap-6 lg:grid-cols-[1fr_300px]">
+      <div className="mt-6 grid gap-5 lg:grid-cols-[1fr_300px]">
         <div className="space-y-3">
           <AnimatePresence initial={false}>
             {ALERTS.slice(0, visible).map((a) => {

@@ -269,53 +269,6 @@ const fadeUp: Variants = {
 };
 
 /* ------------------------------------------------------------------------ */
-/*  Header                                                                   */
-/* ------------------------------------------------------------------------ */
-
-function DevicesHeader() {
-  const nav = ["Overview", "Shipments", "Live Tracking", "Analytics", "AI Insights", "Alerts", "Devices"];
-  return (
-    <header className="sticky top-0 z-40 border-b" style={{ borderColor: COLORS.line, backgroundColor: "rgba(247,245,238,0.85)", backdropFilter: "blur(10px)" }}>
-      <div className="mx-auto max-w-[1440px] px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="h-7 w-7 rounded-full flex items-center justify-center" style={{ backgroundColor: COLORS.forest }}>
-            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS.emerald }} />
-          </div>
-          <div className="leading-tight">
-            <div className="text-[13px] font-semibold tracking-tight" style={{ color: COLORS.ink }}>ChillChain AI</div>
-            <div className="text-[9px] tracking-[0.14em] uppercase" style={{ color: COLORS.inkSoft }}>Cold-Chain Intelligence</div>
-          </div>
-        </div>
-
-        <nav className="hidden lg:flex items-center gap-7">
-          {nav.map((n) => (
-            <a
-              key={n}
-              href="#"
-              className="text-[13px] transition-colors"
-              style={{ color: n === "Devices" ? COLORS.ink : COLORS.inkSoft, fontWeight: n === "Devices" ? 600 : 500 }}
-            >
-              {n}
-            </a>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-full" style={{ backgroundColor: COLORS.emeraldSoft }}>
-            <StatusDot status="online" size={6} />
-            <span className="text-[11px] font-medium" style={{ color: COLORS.forestSoft }}>12 SENSORS ONLINE</span>
-          </div>
-          <button className="h-8 w-8 rounded-full grid place-items-center border" style={{ borderColor: COLORS.line }}>
-            <Bell size={14} color={COLORS.inkSoft} />
-          </button>
-          <div className="h-8 w-8 rounded-full grid place-items-center text-white text-[12px] font-semibold" style={{ backgroundColor: COLORS.forest }}>
-            N
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-}
 
 /* ------------------------------------------------------------------------ */
 /*  Page title bar                                                          */
@@ -834,7 +787,6 @@ function AlertsAndCommands() {
 export default function Devices() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: COLORS.paper }}>
-      <DevicesHeader />
       <TitleBar />
       <PipelineHero />
       <DeviceOverviewVisual />
