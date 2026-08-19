@@ -229,7 +229,6 @@ const toneStyles: Record<string, { fg: string; bg: string; border: string }> = {
   bad: { fg: T.red, bg: T.redSoft, border: "#E7C3BF" },
 };
 
-<<<<<<< HEAD
 function Navbar({ metrics }: { metrics: any }) {
   const items = [
     { label: "Overview", icon: LayoutDashboard },
@@ -300,8 +299,6 @@ function Navbar({ metrics }: { metrics: any }) {
     </div>
   );
 }
-=======
->>>>>>> upstream/main
 
 const heroContainer = {
   hidden: {},
