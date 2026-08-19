@@ -24,65 +24,88 @@ import {
   SHIPMENTS,
   temperatureSeries,
   type Range,
+  type RiskLevel,
+  type TempPoint,
 } from "@/lib/ChillChain-data";
+import {
+  computeTemperatureStats,
+  RANGE_INTERVAL_MINUTES,
+} from "@/types/telemetry";
 import {
   Counter,
   LevelPill,
+  LiveDot,
   Reveal,
   Section,
   SectionHeading,
   useMounted,
 } from "./primitives";
-import {
-  computeTemperatureStats,
-  RANGE_INTERVAL_MINUTES,
-} from "@/types/telemetry";
 
-const RANGES: Range[] = ["24H", "7D", "30D"];
+type DisplayRange = "LIVE" | Range;
 
-export function TemperatureIntelligence() {
-  const [range, setRange] = useState<Range>("24H");
+const RANGES: DisplayRange[] = ["LIVE", "24H", "7D", "30D"];
+
+const LEVEL_LABEL: Record<RiskLevel, string> = {
+  healthy: "Healthy",
+  warning: "Warning",
+  critical: "Critical",
+};
+
+interface TemperatureIntelligenceProps {
+  /** Live telemetry frames for the active simulation, newest last. When
+   *  omitted or empty, the section behaves exactly as before (mock data). */
+  liveData?: TelemetryFrame[];
+  /** Shipment id to display while LIVE is selected and live data is active.
+   *  Falls back to the first live frame's shipmentId if omitted. */
+  liveShipmentId?: string;
+}
+
+export function TemperatureIntelligence({
+  liveData,
+  liveShipmentId,
+}: TemperatureIntelligenceProps = {}) {
+  const [range, setRange] = useState<DisplayRange>("24H");
   const [shipment, setShipment] = useState(SHIPMENTS[0]!.id);
 
   const mounted = useMounted();
+
+  const isLiveSelected = range === "LIVE";
+  const hasLiveData = isLiveSelected && !!liveData && liveData.length > 0;
 
   const seed = useMemo(
     () => shipment.charCodeAt(shipment.length - 1) % 9,
     [shipment],
   );
 
-  const data = useMemo(
-    () => temperatureSeries(range, seed),
-    [range, seed],
-  );
+  const mockData = useMemo<TempPoint[]>(() => {
+    if (isLiveSelected) return [];
+    return temperatureSeries(range as Range, seed);
+  }, [isLiveSelected, range, seed]);
+
+  const activeData: TempPoint[] = hasLiveData
+    ? (liveData as TelemetryFrame[])
+    : mockData;
+
+  const intervalMinutes = isLiveSelected
+    ? RANGE_INTERVAL_MINUTES["24H"]
+    : RANGE_INTERVAL_MINUTES[range as Range];
 
   const stats = useMemo(
-  () =>
-    computeTemperatureStats(
-      data,
-      RANGE_INTERVAL_MINUTES[range],
-    ),
-  [data, range],
-);
+    () => computeTemperatureStats(activeData, intervalMinutes),
+    [activeData, intervalMinutes],
+  );
 
-const currentTemp = stats?.current ?? 0;
-const previousTemp = stats?.previous ?? currentTemp;
-const breaches = stats?.excursions ?? 0;
+  const effectiveShipmentId = hasLiveData
+    ? (liveShipmentId ?? (liveData as TelemetryFrame[])[0]!.shipmentId)
+    : shipment;
 
-const safeHigh = stats?.safeHigh ?? 8;
-const criticalThreshold = stats?.critical ?? 10;
-
-const aboveSafe = stats?.aboveSafe ?? 0;
-
-const temperatureRising =
-  stats?.trend === "rising";
-
-  const risk =
-    currentTemp >= criticalThreshold
+  const riskLabel = stats
+    ? stats.current >= stats.critical
       ? "HIGH"
-      : currentTemp >= safeHigh
+      : stats.current >= stats.safeHigh
         ? "MEDIUM"
-        : "LOW";
+        : "LOW"
+    : "LOW";
 
   return (
     <Section id="temperature">
@@ -127,10 +150,11 @@ const temperatureRising =
                   <span
                     className={
                       range === r
-                        ? "relative text-primary-foreground"
-                        : "relative text-muted-foreground"
+                        ? "relative inline-flex items-center gap-1.5 text-primary-foreground"
+                        : "relative inline-flex items-center gap-1.5 text-muted-foreground"
                     }
                   >
+                    {r === "LIVE" && hasLiveData && <LiveDot />}
                     {r}
                   </span>
                 </button>
@@ -140,12 +164,19 @@ const temperatureRising =
             {/* SHIPMENT */}
 
             <select
-              value={shipment}
+              value={effectiveShipmentId}
+              disabled={isLiveSelected}
               onChange={(e) =>
                 setShipment(e.target.value)
               }
-              className="rounded-full border border-border bg-surface px-4 py-2 text-xs font-bold uppercase tracking-wider text-foreground outline-none transition-colors focus:border-accent"
+              className="rounded-full border border-border bg-surface px-4 py-2 text-xs font-bold uppercase tracking-wider text-foreground outline-none transition-colors focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
+              {hasLiveData && (
+                <option value={effectiveShipmentId}>
+                  {effectiveShipmentId} · Live Simulation
+                </option>
+              )}
+
               {SHIPMENTS.map((s) => (
                 <option
                   key={s.id}
@@ -167,6 +198,22 @@ const temperatureRising =
         delay={0.1}
         className="mt-12"
       >
+        {!stats ? (
+          <div className="surface-panel flex flex-col items-center justify-center gap-3 rounded-3xl p-16 text-center">
+            <div className="grid h-12 w-12 place-items-center rounded-2xl bg-muted text-muted-foreground">
+              <Thermometer className="h-5 w-5" />
+            </div>
+
+            <p className="font-display text-lg font-bold">
+              No live telemetry yet
+            </p>
+
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Start a live shipment simulation to stream real-time
+              temperature, humidity and risk data into this panel.
+            </p>
+          </div>
+        ) : (
         <div className="space-y-6">
 
           {/* TOP ROW */}
@@ -202,15 +249,15 @@ const temperatureRising =
 
                 <p className="mt-2 font-display text-6xl font-bold tracking-tighter text-destructive">
                   <Counter
-                    to={currentTemp}
+                    to={stats.current}
                     decimals={1}
                     suffix="°C"
                   />
                 </p>
 
                 <div className="mt-4">
-                  <LevelPill level="critical">
-                    Critical
+                  <LevelPill level={stats.level}>
+                    {LEVEL_LABEL[stats.level]}
                   </LevelPill>
                 </div>
 
@@ -218,16 +265,14 @@ const temperatureRising =
                   <div className="flex items-center gap-2 text-sm font-semibold text-destructive">
                     <AlertTriangle className="h-4 w-4" />
 
-                    {aboveSafe > 0
-                      ? `+${aboveSafe.toFixed(1)}°C above safe range`
+                    {stats.aboveSafe > 0
+                      ? `+${stats.aboveSafe.toFixed(1)}°C above safe range`
                       : "Within safe range"}
                   </div>
 
                   <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
                     Temperature is currently{" "}
-                    {temperatureRising
-                      ? "rising"
-                      : "stable"}
+                    {stats.trend}
                     . ChillChain is monitoring the
                     shipment continuously.
                   </p>
@@ -256,7 +301,7 @@ const temperatureRising =
                           97,
                           Math.max(
                             4,
-                            (currentTemp / 14) * 100,
+                            (stats.current / 14) * 100,
                           ),
                         )}%`,
                       }}
@@ -273,7 +318,7 @@ const temperatureRising =
                       Safe band
                     </dt>
                     <dd className="font-semibold">
-                      2.0 – 8.0°C
+                      {stats.safeLow.toFixed(1)} – {stats.safeHigh.toFixed(1)}°C
                     </dd>
                   </div>
 
@@ -282,7 +327,7 @@ const temperatureRising =
                       Critical limit
                     </dt>
                     <dd className="font-semibold">
-                      10.0°C
+                      {stats.critical.toFixed(1)}°C
                     </dd>
                   </div>
 
@@ -291,7 +336,7 @@ const temperatureRising =
                       Excursions
                     </dt>
                     <dd className="font-semibold">
-                      {breaches || 3}
+                      {stats.excursions}
                     </dd>
                   </div>
 
@@ -300,7 +345,7 @@ const temperatureRising =
                       Unsafe exposure
                     </dt>
                     <dd className="font-semibold">
-                      47 min
+                      {Math.round(stats.unsafeExposureMinutes)} min
                     </dd>
                   </div>
                 </dl>
@@ -361,7 +406,7 @@ const temperatureRising =
                     height="100%"
                   >
                     <ComposedChart
-                      data={data}
+                      data={activeData}
                       margin={{
                         top: 10,
                         right: 20,
@@ -486,12 +531,12 @@ const temperatureRising =
                       {/* CRITICAL */}
 
                       <ReferenceLine
-                        y={criticalThreshold}
+                        y={stats.critical}
                         stroke="var(--chart-4)"
                         strokeDasharray="7 6"
                         strokeWidth={1.5}
                         label={{
-                          value: "CRITICAL · 10°C",
+                          value: `CRITICAL · ${stats.critical.toFixed(0)}°C`,
                           position: "insideTopRight",
                           fill: "var(--chart-4)",
                           fontSize: 10,
@@ -545,31 +590,52 @@ const temperatureRising =
             <MetricCard
               icon={Thermometer}
               label="Average temperature"
-              value="6.8°C"
-              detail="Within expected range"
+              value={`${stats.average.toFixed(1)}°C`}
+              detail={
+                stats.average >= stats.critical
+                  ? "Critical average"
+                  : stats.average >= stats.safeHigh
+                    ? "Above safe range"
+                    : "Within expected range"
+              }
             />
 
             <MetricCard
               icon={Flame}
               label="Peak temperature"
-              value="11.8°C"
-              detail="Critical excursion"
-              danger
+              value={`${stats.peak.toFixed(1)}°C`}
+              detail={
+                stats.peak >= stats.critical
+                  ? "Critical excursion"
+                  : stats.peak >= stats.safeHigh
+                    ? "Approaching threshold"
+                    : "Within safe range"
+              }
+              danger={stats.peak >= stats.critical}
             />
 
             <MetricCard
               icon={AlertTriangle}
               label="Excursions detected"
-              value={breaches || 3}
-              detail="Requires attention"
+              value={stats.excursions}
+              detail={
+                stats.excursions > 0
+                  ? "Requires attention"
+                  : "No breaches recorded"
+              }
+              danger={stats.excursions > 0}
             />
 
             <MetricCard
               icon={Clock3}
               label="Unsafe exposure"
-              value="47 min"
-              detail="Above critical limit"
-              danger
+              value={`${Math.round(stats.unsafeExposureMinutes)} min`}
+              detail={
+                stats.unsafeExposureMinutes > 0
+                  ? "Above critical limit"
+                  : "No unsafe exposure"
+              }
+              danger={stats.unsafeExposureMinutes > 0}
             />
           </div>
 
@@ -612,24 +678,31 @@ const temperatureRising =
                     </p>
 
                     <span className="rounded-full bg-destructive/20 px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-red-200">
-                      {risk} risk
+                      {riskLabel} risk
                     </span>
                   </div>
 
                   <h3 className="mt-2 font-display text-xl font-bold">
                     Temperature is{" "}
-                    {temperatureRising
+                    {stats.trend === "rising"
                       ? "trending upward."
-                      : "currently stable."}
+                      : stats.trend === "falling"
+                        ? "recovering."
+                        : "currently stable."}
                   </h3>
 
                   <p className="mt-2 max-w-2xl text-sm leading-relaxed text-primary-foreground/70">
-                    ChillChain detected {breaches || 3} temperature
-                    excursions. The current reading is{" "}
-                    {currentTemp.toFixed(1)}°C, which is{" "}
-                    {aboveSafe.toFixed(1)}°C above the safe
-                    operating range. Continued exposure may
-                    increase spoilage risk.
+                    ChillChain detected {stats.excursions} temperature{" "}
+                    {stats.excursions === 1 ? "excursion" : "excursions"}.
+                    The current reading is{" "}
+                    {stats.current.toFixed(1)}°C, which is{" "}
+                    {stats.aboveSafe > 0
+                      ? `${stats.aboveSafe.toFixed(1)}°C above the safe operating range`
+                      : "within the safe operating range"}
+                    .{" "}
+                    {stats.aboveSafe > 0
+                      ? "Continued exposure may increase spoilage risk."
+                      : "No further action is required at this time."}
                   </p>
                 </div>
               </div>
@@ -643,6 +716,7 @@ const temperatureRising =
           </motion.div>
 
         </div>
+        )}
       </Reveal>
     </Section>
   );

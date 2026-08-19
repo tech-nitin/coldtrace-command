@@ -238,79 +238,6 @@ const toneStyles = {
   bad: { fg: T.red, bg: T.redSoft, border: "#E7C3BF" },
 };
 
-/* ─────────────────────────────────────────────────────────────
-   NAVBAR  (reused visual language from the Dashboard)
-   ───────────────────────────────────────────────────────────── */
-function Navbar() {
-  const items = [
-    { label: "Overview", icon: LayoutDashboard },
-    { label: "Shipments", icon: Truck },
-    { label: "Live Tracking", icon: MapPin },
-    { label: "Analytics", icon: LineChartIcon, active: true },
-    { label: "AI Insights", icon: Sparkles },
-    { label: "Alerts", icon: Bell },
-  ];
-  return (
-    <div
-      className="sticky top-0 z-40 border-b backdrop-blur-md"
-      style={{ background: "rgba(246,243,234,0.86)", borderColor: T.line }}
-    >
-      <div className="mx-auto flex max-w-[1240px] items-center justify-between px-6 py-3.5">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-[9px]"
-            style={{ background: T.forest }}
-          >
-            <span className="text-[13px] font-semibold text-white">C</span>
-          </div>
-          <div className="leading-tight">
-            <div className="text-[13.5px] font-semibold tracking-tight" style={{ color: T.ink }}>
-              ChillChain AI
-            </div>
-            <div className="text-[9.5px] font-medium uppercase tracking-[0.12em]" style={{ color: T.inkSoft }}>
-              Cold-Chain Intelligence
-            </div>
-          </div>
-        </div>
-
-        <nav className="hidden items-center gap-1 md:flex">
-          {items.map((it) => (
-            <button
-              key={it.label}
-              className="rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors"
-              style={
-                it.active
-                  ? { background: T.forest, color: "#fff" }
-                  : { color: T.inkSoft }
-              }
-            >
-              {it.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-3">
-          <div
-            className="hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium sm:flex"
-            style={{ borderColor: T.mintLine, background: T.mint, color: T.emerald }}
-          >
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-70" style={{ background: T.emerald }} />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: T.emerald }} />
-            </span>
-            6 Sensors Online
-          </div>
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-semibold text-white"
-            style={{ background: T.emerald }}
-          >
-            N
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────────
    HERO
@@ -1416,7 +1343,6 @@ export default function AnalyticsPage() {
   return (
     <div style={{ background: T.cream, minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
       <style>{fontImport}</style>
-      <Navbar />
       <Hero range={range} setRange={setRange} shipment={shipment} setShipment={setShipment} />
       <KpiStrip range={range} />
       <TemperatureChart range={range} />

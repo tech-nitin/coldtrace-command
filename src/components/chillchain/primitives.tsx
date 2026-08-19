@@ -215,7 +215,13 @@ export function Section({
   className?: string;
 }) {
   return (
-    <section id={id} className={cn("mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-28", className)}>
+    <section
+      id={id}
+      className={cn(
+        "mx-auto w-full max-w-7xl px-5 py-6 sm:px-8 sm:py-8 lg:py-10",
+        className,
+      )}
+    >
       {children}
     </section>
   );

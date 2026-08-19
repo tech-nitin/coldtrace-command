@@ -1398,34 +1398,6 @@ export default function LiveTrackingPage() {
     <div className="cc-root min-h-screen bg-stone-50 text-stone-800 overflow-x-hidden">
       <MotionStyles />
 
-      {/* top nav */}
-      <div className="border-b border-stone-200 bg-white/80 backdrop-blur-sm sticky top-0 z-30">
-        <div className="mx-auto px-6 py-3 flex items-center justify-between" style={{ maxWidth: 1480 }}>
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-emerald-950 flex items-center justify-center">
-              <Snowflake size={14} className="text-emerald-300" />
-            </div>
-            <div className="leading-tight">
-              <div className="text-[13px] font-bold text-emerald-950">ChillChain AI</div>
-              <div className="text-[9px] tracking-wide text-stone-400 uppercase">
-                Cold Chain Intelligence
-              </div>
-            </div>
-          </div>
-          <div className="hidden md:flex items-center gap-6 text-[13px] text-stone-500">
-            <span>Overview</span>
-            <span>Shipments</span>
-            <span className="text-emerald-700 font-semibold">Live Tracking</span>
-            <span>Analytics</span>
-            <span>AI Insights</span>
-            <span>Alerts</span>
-          </div>
-          <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-700">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />6 sensors online
-          </div>
-        </div>
-      </div>
-
       <div className="mx-auto px-6 py-10" style={{ maxWidth: 1480 }}>
         <TrackingHero activeCount={24} />
 
