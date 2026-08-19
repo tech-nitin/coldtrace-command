@@ -12,10 +12,10 @@ import {
   Wifi, WifiOff, Signal, Gauge, ArrowUpRight, ChevronRight,
   Radar, Wrench, Brain,
 } from "lucide-react";
+import { io, Socket } from "socket.io-client";
 
-/* ─────────────────────────────────────────────────────────────
-   DESIGN TOKENS  (matched to the ChillChain AI dashboard)
-   ───────────────────────────────────────────────────────────── */
+const API_BASE_URL = "http://localhost:5000";
+
 const T = {
   cream: "#F6F3EA",
   creamSoft: "#FBFAF5",
@@ -37,17 +37,14 @@ const fontImport = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,340;9..144,480;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
 `;
 
-/* ─────────────────────────────────────────────────────────────
-   MOCK DATA  (kept separate from UI so it can be swapped for an API)
-   ───────────────────────────────────────────────────────────── */
-const RANGE_META = {
+const RANGE_META: Record<string, { points: number; label: (i: number) => string; unit: string }> = {
   "24H": { points: 24, label: (i) => `${String(i).padStart(2, "0")}:00`, unit: "hour" },
   "7D": { points: 7, label: (i) => ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i], unit: "day" },
   "30D": { points: 30, label: (i) => `${i + 1}`, unit: "day" },
   "90D": { points: 12, label: (i) => `W${i + 1}`, unit: "week" },
 };
 
-function seededRandom(seed) {
+function seededRandom(seed: number) {
   let s = seed;
   return () => {
     s = (s * 9301 + 49297) % 233280;
@@ -55,7 +52,7 @@ function seededRandom(seed) {
   };
 }
 
-function buildTempSeries(range) {
+function buildTempSeries(range: string) {
   const meta = RANGE_META[range];
   const rnd = seededRandom(range.charCodeAt(0) * 17 + range.length);
   const base = 4.0;
@@ -65,7 +62,7 @@ function buildTempSeries(range) {
   const data = [];
   let current = base + rnd() * 1.2;
   for (let i = 0; i < meta.points; i++) {
-    const drift = (i / meta.points) * 6.4; // gradual upward drift, mirrors the reference chart
+    const drift = (i / meta.points) * 6.4;
     const noise = (rnd() - 0.45) * 1.1;
     current = base + drift + noise * (1 + i / meta.points);
     current = Math.max(1.5, current);
@@ -105,8 +102,9 @@ const KPI_BASE = {
     { key: "savings", label: "Losses Prevented", value: 2.4, prefix: "₹", suffix: "L", delta: 12.8, dir: "up", tone: "good", spark: [1.4,1.6,1.7,1.9,2.0,2.1,2.3,2.4] },
   ],
 };
-function scaleKpis(range) {
-  const mult = { "24H": 1, "7D": 1.6, "30D": 3.1, "90D": 5.4 }[range];
+
+function scaleKpis(range: string) {
+  const mult = { "24H": 1, "7D": 1.6, "30D": 3.1, "90D": 5.4 }[range] || 1;
   return KPI_BASE["24H"].map((k) => {
     if (k.key === "onTime" || k.key === "health") return { ...k };
     const scaled = k.key === "savings" ? Math.round(k.value * mult * 10) / 10 : Math.round(k.value * mult);
@@ -114,17 +112,16 @@ function scaleKpis(range) {
   });
 }
 
-const PERIOD_COPY = {
+const PERIOD_COPY: Record<string, string> = {
   "24H": "vs previous 24 hours",
   "7D": "vs previous 7 days",
   "30D": "vs previous 30 days",
   "90D": "vs previous quarter",
 };
 
-const TOTAL_SHIPMENTS = { "24H": 24, "7D": 38, "30D": 74, "90D": 130 };
+const TOTAL_SHIPMENTS: Record<string, number> = { "24H": 24, "7D": 38, "30D": 74, "90D": 130 };
 
-/* ---- Risk Trend (stacked, responds to the global time filter) ---- */
-function buildRiskTrend(range) {
+function buildRiskTrend(range: string) {
   const meta = RANGE_META[range];
   const rnd = seededRandom(range.length * 31 + 7);
   let low = 74, medium = 16, high = 7, critical = 3;
@@ -146,13 +143,12 @@ function buildRiskTrend(range) {
   }
   return data;
 }
-function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
 
-/* ---- Risk Distribution (donut) ---- */
-function buildRiskDistribution(range) {
+function buildRiskDistribution(range: string) {
   const trend = buildRiskTrend(range);
   const last = trend[trend.length - 1];
-  const total = TOTAL_SHIPMENTS[range];
+  const total = TOTAL_SHIPMENTS[range] || 24;
   const segments = [
     { key: "healthy", label: "Healthy", pct: last.Low, color: T.emerald },
     { key: "atRisk", label: "At Risk", pct: last.Medium, color: T.amber },
@@ -162,7 +158,6 @@ function buildRiskDistribution(range) {
   return segments.map((s) => ({ ...s, count: Math.max(1, Math.round((s.pct / 100) * total)) }));
 }
 
-/* ---- Route Performance ---- */
 const ROUTES = [
   { id: "idr-bpl", from: "Indore", to: "Bhopal", health: 92, onTime: 97, shipments: 12, excursions: 1, avgTemp: 4.6 },
   { id: "jai-idr", from: "Jaipur", to: "Indore", health: 81, onTime: 91, shipments: 8, excursions: 2, avgTemp: 5.4 },
@@ -170,25 +165,21 @@ const ROUTES = [
   { id: "bpl-jai", from: "Bhopal", to: "Jaipur", health: 70, onTime: 89, shipments: 7, excursions: 3, avgTemp: 6.4 },
   { id: "mum-pun", from: "Mumbai", to: "Pune", health: 68, onTime: 86, shipments: 9, excursions: 4, avgTemp: 6.9 },
 ];
-function routeTone(health) {
+function routeTone(health: number) {
   if (health >= 88) return "good";
   if (health >= 74) return "warn";
   return "bad";
 }
 
-/* ---- Sensor Intelligence ---- */
 const SENSORS = [
   { id: "temp", name: "Temperature Sensor", model: "SHT40", icon: "temp", uptime: 99.2, quality: 98.6, issues: 1, lastComm: "12s ago", online: true },
   { id: "humidity", name: "Humidity Sensor", model: "SHT40", icon: "humidity", uptime: 98.7, quality: 96.4, issues: 0, lastComm: "12s ago", online: true },
   { id: "gps", name: "GPS Module", model: "ESP32 · u-blox", icon: "gps", uptime: 95.4, quality: 91.8, issues: 2, lastComm: "48s ago", online: true },
   { id: "accel", name: "Accelerometer", model: "MPU6050", icon: "accel", uptime: 88.1, quality: 84.2, issues: 4, lastComm: "6 min ago", online: false },
 ];
-const sensorIcon = { temp: Thermometer, humidity: Droplets, gps: Satellite, accel: Activity };
+const sensorIcon: Record<string, any> = { temp: Thermometer, humidity: Droplets, gps: Satellite, accel: Activity };
 
-/* ─────────────────────────────────────────────────────────────
-   SMALL PRIMITIVES
-   ───────────────────────────────────────────────────────────── */
-function CountUp({ value, decimals = 0, prefix = "", suffix = "" }) {
+function CountUp({ value, decimals = 0, prefix = "", suffix = "" }: { value: number; decimals?: number; prefix?: string; suffix?: string }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: "-10% 0px" });
   const mv = useMotionValue(0);
@@ -202,7 +193,7 @@ function CountUp({ value, decimals = 0, prefix = "", suffix = "" }) {
       onUpdate: (v) => setDisplay(v.toFixed(decimals)),
     });
     return () => controls.stop();
-  }, [inView, value]);
+  }, [inView, value, decimals]);
 
   return (
     <span ref={ref}>
@@ -213,7 +204,7 @@ function CountUp({ value, decimals = 0, prefix = "", suffix = "" }) {
   );
 }
 
-function Sparkline({ points, tone }) {
+function Sparkline({ points, tone }: { points: number[]; tone: string }) {
   const w = 72, h = 26;
   const min = Math.min(...points), max = Math.max(...points);
   const span = max - min || 1;
@@ -232,16 +223,13 @@ function Sparkline({ points, tone }) {
   );
 }
 
-const toneStyles = {
+const toneStyles: Record<string, { fg: string; bg: string; border: string }> = {
   good: { fg: T.emerald, bg: T.mint, border: T.mintLine },
   warn: { fg: T.amber, bg: T.amberSoft, border: "#EAD3A5" },
   bad: { fg: T.red, bg: T.redSoft, border: "#E7C3BF" },
 };
 
-/* ─────────────────────────────────────────────────────────────
-   NAVBAR  (reused visual language from the Dashboard)
-   ───────────────────────────────────────────────────────────── */
-function Navbar() {
+function Navbar({ metrics }: { metrics: any }) {
   const items = [
     { label: "Overview", icon: LayoutDashboard },
     { label: "Shipments", icon: Truck },
@@ -298,7 +286,7 @@ function Navbar() {
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-70" style={{ background: T.emerald }} />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: T.emerald }} />
             </span>
-            6 Sensors Online
+            {metrics ? `${metrics.sensorNetwork?.online || 6}/${metrics.sensorNetwork?.total || 6} Sensors Online` : "6 Sensors Online"}
           </div>
           <div
             className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-semibold text-white"
@@ -312,9 +300,6 @@ function Navbar() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   HERO
-   ───────────────────────────────────────────────────────────── */
 const heroContainer = {
   hidden: {},
   show: { transition: { staggerChildren: 0.09, delayChildren: 0.05 } },
@@ -324,7 +309,7 @@ const heroItem = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
 };
 
-function Hero({ range, setRange, shipment, setShipment }) {
+function Hero({ range, setRange, shipment, setShipment, shipmentsList }: any) {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30000);
@@ -418,11 +403,12 @@ function Hero({ range, setRange, shipment, setShipment }) {
                   className="appearance-none rounded-full border py-2 pl-3.5 pr-8 text-[12.5px] font-medium outline-none"
                   style={{ borderColor: T.line, background: T.creamSoft, color: T.ink }}
                 >
-                  <option>All Shipments</option>
-                  <option>CG-10458 · Fruits</option>
-                  <option>CG-10431 · Dairy</option>
-                  <option>CG-10428 · Seafood</option>
-                  <option>CG-10417 · Vaccines</option>
+                  <option value="ALL">All Shipments</option>
+                  {shipmentsList.map((s: any) => (
+                    <option key={s.shipmentId} value={s.shipmentId}>
+                      {s.shipmentId} · {s.cargoType}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown
                   size={13}
@@ -446,10 +432,7 @@ function Hero({ range, setRange, shipment, setShipment }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   KPI STRIP
-   ───────────────────────────────────────────────────────────── */
-const kpiIcon = {
+const kpiIcon: Record<string, any> = {
   health: ShieldCheck,
   excursions: Thermometer,
   onTime: TrendingUp,
@@ -457,9 +440,9 @@ const kpiIcon = {
   savings: IndianRupee,
 };
 
-function KpiCard({ kpi, range, index }) {
-  const styles = toneStyles[kpi.tone];
-  const Icon = kpiIcon[kpi.key];
+function KpiCard({ kpi, range, index }: any) {
+  const styles = toneStyles[kpi.tone] || toneStyles.good;
+  const Icon = kpiIcon[kpi.key] || ShieldCheck;
   const DirIcon = kpi.dir === "up" ? TrendingUp : TrendingDown;
   const isGoodDelta = kpi.key === "excursions" || kpi.key === "atRisk" ? kpi.dir === "down" : kpi.dir === "up";
 
@@ -513,7 +496,7 @@ function KpiCard({ kpi, range, index }) {
   );
 }
 
-function KpiStrip({ range }) {
+function KpiStrip({ range }: { range: string }) {
   const kpis = useMemo(() => scaleKpis(range), [range]);
   return (
     <section className="mx-auto max-w-[1240px] px-6 py-10">
@@ -536,10 +519,7 @@ function KpiStrip({ range }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   TEMPERATURE INTELLIGENCE — hero visualization
-   ───────────────────────────────────────────────────────────── */
-function ChartTooltip({ active, payload, label, range }) {
+function ChartTooltip({ active, payload, label, range }: any) {
   if (!active || !payload || !payload.length) return null;
   const d = payload[0].payload;
   const riskColor = d.risk === "High" ? T.red : d.risk === "Elevated" ? T.amber : T.emerald;
@@ -564,20 +544,12 @@ function ChartTooltip({ active, payload, label, range }) {
           <span style={{ color: T.inkSoft }}>Risk</span>
           <span className="font-semibold" style={{ color: riskColor }}>{d.risk}</span>
         </div>
-        {d.temp > d.critical && (
-          <div className="flex items-center justify-between gap-6">
-            <span style={{ color: T.inkSoft }}>Excursion</span>
-            <span className="font-semibold" style={{ color: T.red }}>
-              {18 + Math.round((d.temp - d.critical) * 9)} min
-            </span>
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-function ActiveDot(props) {
+function ActiveDot(props: any) {
   const { cx, cy, payload } = props;
   if (cx == null) return null;
   const isExcursion = payload.temp > payload.critical;
@@ -590,8 +562,12 @@ function ActiveDot(props) {
   );
 }
 
-function TemperatureChart({ range }) {
+function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemetry: any }) {
   const { data, stats } = useMemo(() => buildTempSeries(range), [range]);
+
+  const currentTemp = liveTelemetry?.temperature ?? data[data.length - 1].temp;
+  const isCritical = currentTemp > 10.0;
+
   const statCards = [
     { label: "Average Temperature", value: `${stats.avg}°C`, note: "Within expected range", icon: Thermometer, tone: "good" },
     { label: "Peak Temperature", value: `${stats.peak}°C`, note: "Critical excursion", icon: TrendingUp, tone: "bad" },
@@ -613,36 +589,38 @@ function TemperatureChart({ range }) {
       </p>
 
       <div className="mt-7 grid grid-cols-1 gap-5 lg:grid-cols-[280px_1fr]">
-        {/* Left: current reading card */}
         <motion.div
           key={`side-${range}`}
           initial={{ opacity: 0, x: -12 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="flex flex-col rounded-[20px] border p-5"
-          style={{ borderColor: "#E9C9C4", background: "linear-gradient(180deg,#FBEFEC 0%, #F8E3DF 100%)" }}
+          style={{
+            borderColor: isCritical ? "#E9C9C4" : T.line,
+            background: isCritical ? "linear-gradient(180deg,#FBEFEC 0%, #F8E3DF 100%)" : T.creamSoft,
+          }}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: T.red }}>
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold" style={{ color: isCritical ? T.red : T.emerald }}>
               <Thermometer size={13} /> CURRENT TEMPERATURE
             </div>
             <span className="flex items-center gap-1 text-[10.5px] font-semibold" style={{ color: T.inkSoft }}>
               <Radio size={11} /> LIVE
             </span>
           </div>
-          <div className="mt-3 text-[42px] font-medium leading-none" style={{ fontFamily: "'Fraunces', serif", color: T.red }}>
-            {data[data.length - 1].temp}°C
+          <div className="mt-3 text-[42px] font-medium leading-none" style={{ fontFamily: "'Fraunces', serif", color: isCritical ? T.red : T.emerald }}>
+            {currentTemp}°C
           </div>
           <span
             className="mt-3 inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wide"
-            style={{ background: T.red, color: "#fff" }}
+            style={{ background: isCritical ? T.red : T.emerald, color: "#fff" }}
           >
-            Critical
+            {isCritical ? "Critical" : "Healthy"}
           </span>
 
           <div className="mt-4 rounded-[13px] border bg-white/60 p-3 text-[12px] leading-snug" style={{ borderColor: "#EAD0CC", color: T.inkSoft }}>
             <span className="font-semibold" style={{ color: T.ink }}>
-              +{(data[data.length - 1].temp - 8).toFixed(1)}°C above safe range.
+              {isCritical ? `+${(currentTemp - 8.0).toFixed(1)}°C above safe range.` : "Operating within safe thermal limits."}
             </span>{" "}
             ChillChain is monitoring the shipment continuously.
           </div>
@@ -666,7 +644,6 @@ function TemperatureChart({ range }) {
           </div>
         </motion.div>
 
-        {/* Right: chart */}
         <div className="rounded-[20px] border p-5" style={{ borderColor: T.line, background: T.creamSoft }}>
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-[14.5px] font-semibold" style={{ color: T.ink }}>
@@ -750,7 +727,6 @@ function TemperatureChart({ range }) {
         </div>
       </div>
 
-      {/* stat cards below chart */}
       <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {statCards.map((s, i) => {
           const st = toneStyles[s.tone];
@@ -783,7 +759,6 @@ function TemperatureChart({ range }) {
         })}
       </div>
 
-      {/* AI insight banner */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -805,7 +780,7 @@ function TemperatureChart({ range }) {
             </div>
             <p className="mt-1 max-w-[560px] text-[12.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
               ChillChain detected {stats.excursions} temperature excursions in the selected window. The
-              latest reading is {data[data.length - 1].temp}°C, {(data[data.length - 1].temp - 8).toFixed(1)}°C
+              latest reading is {currentTemp}°C, {(currentTemp - 8).toFixed(1)}°C
               above the safe operating range. Continued exposure may increase spoilage risk.
             </p>
           </div>
@@ -818,9 +793,6 @@ function TemperatureChart({ range }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   RISK INTELLIGENCE — trend (left) + donut (right)
-   ───────────────────────────────────────────────────────────── */
 const RISK_SERIES = [
   { key: "Low", color: T.emerald, fill: "url(#riskLow)" },
   { key: "Medium", color: T.amber, fill: "url(#riskMedium)" },
@@ -828,14 +800,14 @@ const RISK_SERIES = [
   { key: "Critical", color: T.red, fill: "url(#riskCritical)" },
 ];
 
-function RiskTrendTooltip({ active, payload, label }) {
+function RiskTrendTooltip({ active, payload, label }: any) {
   if (!active || !payload || !payload.length) return null;
   return (
     <div className="rounded-[14px] border px-4 py-3 shadow-lg" style={{ borderColor: T.line, background: "#fff", minWidth: 168 }}>
       <div className="text-[11px] font-semibold" style={{ color: T.inkSoft }}>{label}</div>
       <div className="mt-2 space-y-1.5 text-[12px]">
         {RISK_SERIES.map((s) => {
-          const v = payload.find((p) => p.dataKey === s.key)?.value;
+          const v = payload.find((p: any) => p.dataKey === s.key)?.value;
           if (v == null) return null;
           return (
             <div key={s.key} className="flex items-center justify-between gap-6">
@@ -851,7 +823,7 @@ function RiskTrendTooltip({ active, payload, label }) {
   );
 }
 
-function RiskTrendChart({ range }) {
+function RiskTrendChart({ range }: { range: string }) {
   const data = useMemo(() => buildRiskTrend(range), [range]);
   return (
     <div className="rounded-[20px] border p-5" style={{ borderColor: T.line, background: T.creamSoft }}>
@@ -940,9 +912,9 @@ function RiskTrendChart({ range }) {
   );
 }
 
-function RiskDonut({ range }) {
+function RiskDonut({ range }: { range: string }) {
   const segments = useMemo(() => buildRiskDistribution(range), [range]);
-  const [active, setActive] = useState(null);
+  const [active, setActive] = useState<number | null>(null);
   const R = 72, STROKE = 26, CX = 110, CY = 110;
   const CIRC = 2 * Math.PI * R;
 
@@ -963,7 +935,7 @@ function RiskDonut({ range }) {
         Risk Distribution
       </div>
       <div className="mb-2 text-[12px]" style={{ color: T.inkSoft }}>
-        Current snapshot across {TOTAL_SHIPMENTS[range]} shipments
+        Current snapshot across {TOTAL_SHIPMENTS[range] || 24} shipments
       </div>
 
       <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-6 sm:flex-row">
@@ -1032,7 +1004,7 @@ function RiskDonut({ range }) {
   );
 }
 
-function RiskIntelligence({ range }) {
+function RiskIntelligence({ range }: { range: string }) {
   return (
     <section className="mx-auto max-w-[1240px] px-6 py-10">
       <div className="mb-5">
@@ -1055,10 +1027,7 @@ function RiskIntelligence({ range }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   ROUTE PERFORMANCE
-   ───────────────────────────────────────────────────────────── */
-function RouteRow({ route, index }) {
+function RouteRow({ route, index }: any) {
   const tone = routeTone(route.health);
   const st = toneStyles[tone];
   const barRef = useRef(null);
@@ -1139,10 +1108,7 @@ function RoutePerformance() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   SENSOR INTELLIGENCE
-   ───────────────────────────────────────────────────────────── */
-function ProgressBar({ value, color, delay }) {
+function ProgressBar({ value, color, delay }: any) {
   return (
     <div className="h-[6px] w-full overflow-hidden rounded-full" style={{ background: T.line }}>
       <motion.div
@@ -1157,8 +1123,8 @@ function ProgressBar({ value, color, delay }) {
   );
 }
 
-function SensorRow({ sensor, index }) {
-  const Icon = sensorIcon[sensor.icon];
+function SensorRow({ sensor, index }: any) {
+  const Icon = sensorIcon[sensor.icon] || Activity;
   const tone = !sensor.online ? "bad" : sensor.issues > 1 ? "warn" : "good";
   const st = toneStyles[tone];
 
@@ -1248,9 +1214,6 @@ function SensorIntelligence() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   AI PATTERN DETECTED — preview panel, not the full AI Insights page
-   ───────────────────────────────────────────────────────────── */
 const patternField = [
   { label: "Pattern", icon: Radar, text: "4 of the last 7 shipments experienced temperature drift above the safe range." },
   { label: "Likely Cause", icon: Wrench, text: "Cooling performance degradation." },
@@ -1269,7 +1232,6 @@ function AIPatternDetected() {
         className="relative overflow-hidden rounded-[24px] p-7 sm:p-9"
         style={{ background: `linear-gradient(155deg, ${T.forest} 0%, #0B2A1D 100%)` }}
       >
-        {/* restrained ambient glow — no neon */}
         <motion.div
           className="pointer-events-none absolute -left-24 -top-24 h-[340px] w-[340px] rounded-full"
           style={{ background: "radial-gradient(circle, rgba(31,163,92,0.16) 0%, transparent 70%)" }}
@@ -1357,9 +1319,6 @@ function AIPatternDetected() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   LOSS PREVENTION — business-impact closer
-   ───────────────────────────────────────────────────────────── */
 const IMPACT_METRICS = [
   { value: 2.4, prefix: "₹", suffix: "L", decimals: 1, label: "Losses Prevented", note: "Estimated spoilage value averted this period" },
   { value: 18, suffix: "", decimals: 0, label: "High-Risk Shipments Intercepted", note: "Flagged and corrected before delivery" },
@@ -1406,27 +1365,69 @@ function LossPrevention() {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────
-   PAGE
-   ───────────────────────────────────────────────────────────── */
 export default function AnalyticsPage() {
   const [range, setRange] = useState("24H");
-  const [shipment, setShipment] = useState("All Shipments");
+  const [shipment, setShipment] = useState("ALL");
+  const [shipmentsList, setShipmentsList] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [liveTelemetry, setLiveTelemetry] = useState<any>(null);
+
+  // 1. Fetch metrics & list of shipments from backend
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/v1/shipments/metrics`)
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData.success) setMetrics(resData.data);
+      })
+      .catch((err) => console.error("Metrics fetch error:", err));
+
+    fetch(`${API_BASE_URL}/api/v1/shipments`)
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData.success) setShipmentsList(resData.data);
+      })
+      .catch((err) => console.error("Shipments fetch error:", err));
+  }, []);
+
+  // 2. Setup Socket.io real-time listener
+  useEffect(() => {
+    const socket: Socket = io(API_BASE_URL);
+
+    socket.on("connect", () => {
+      console.log("Connected to Socket.io backend server");
+    });
+
+    socket.on("telemetry:update", (data: any) => {
+      if (shipment === "ALL" || shipment === data.shipmentId) {
+        setLiveTelemetry(data);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [shipment]);
 
   return (
     <div style={{ background: T.cream, minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
       <style>{fontImport}</style>
-      <Navbar />
-      <Hero range={range} setRange={setRange} shipment={shipment} setShipment={setShipment} />
+      <Navbar metrics={metrics} />
+      <Hero
+        range={range}
+        setRange={setRange}
+        shipment={shipment}
+        setShipment={setShipment}
+        shipmentsList={shipmentsList}
+      />
       <KpiStrip range={range} />
-      <TemperatureChart range={range} />
+      <TemperatureChart range={range} liveTelemetry={liveTelemetry} />
       <RiskIntelligence range={range} />
       <RoutePerformance />
       <SensorIntelligence />
       <AIPatternDetected />
       <LossPrevention />
       <div className="mx-auto max-w-[1240px] px-6 pb-16 pt-2 text-center text-[11.5px]" style={{ color: T.inkSoft }}>
-        ChillChain AI · Analytics — SHT40 + ESP32 · AI Risk Engine · Hackathon build
+        ChillChain AI · Hackathon build
       </div>
     </div>
   );

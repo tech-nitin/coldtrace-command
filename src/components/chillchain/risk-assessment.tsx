@@ -1,145 +1,148 @@
+<<<<<<< Updated upstream:src/components/chillchain/risk-assessment.tsx
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 import { Brain, Clock, Gauge, HeartPulse, Sparkles, Wrench } from "lucide-react";
 import { AI_ASSESSMENT } from "@/lib/ChillChain-data";
+=======
+import { motion } from "framer-motion";
+import { AlertTriangle, CheckCircle2, RefreshCw, Sparkles } from "lucide-react";
+>>>>>>> Stashed changes:src/components/coldtrace/risk-assessment.tsx
 import { Counter, Reveal, Section } from "./primitives";
 
-function RiskGauge({ value }: { value: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-80px" });
-  const r = 92;
-  const circumference = Math.PI * r; // half circle
-  return (
-    <div ref={ref} className="relative mx-auto w-full max-w-[320px]">
-      <svg viewBox="0 0 220 130" className="w-full">
-        <defs>
-          <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="var(--chart-2)" />
-            <stop offset="55%" stopColor="var(--chart-3)" />
-            <stop offset="100%" stopColor="var(--chart-4)" />
-          </linearGradient>
-        </defs>
-        <path
-          d={`M 18 114 A ${r} ${r} 0 0 1 202 114`}
-          fill="none"
-          stroke="oklch(1 0 0 / 0.14)"
-          strokeWidth="16"
-          strokeLinecap="round"
-        />
-        <motion.path
-          d={`M 18 114 A ${r} ${r} 0 0 1 202 114`}
-          fill="none"
-          stroke="url(#gaugeGrad)"
-          strokeWidth="16"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: inView ? circumference * (1 - value / 100) : circumference }}
-          transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-        />
-        <motion.g
-          initial={{ rotate: -90 }}
-          animate={{ rotate: inView ? -90 + (value / 100) * 180 : -90 }}
-          transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-          style={{ originX: "110px", originY: "114px" }}
-        >
-          <line x1="110" y1="114" x2="110" y2="40" stroke="oklch(1 0 0 / 0.85)" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="110" cy="114" r="7" fill="oklch(1 0 0 / 0.9)" />
-        </motion.g>
-      </svg>
-      <div className="absolute inset-x-0 bottom-0 text-center">
-        <p className="font-display text-5xl font-bold tracking-tighter text-primary-foreground">
-          <Counter to={value} suffix="%" />
-        </p>
-        <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.2em] text-primary-foreground/60">
-          Spoilage Risk
-        </p>
-      </div>
-    </div>
-  );
-}
-
-const METRICS = [
-  { icon: HeartPulse, label: "Shipment Health", value: AI_ASSESSMENT.health, suffix: "/100", decimals: 0 },
-  { icon: Gauge, label: "Anomaly Score", value: AI_ASSESSMENT.anomalyScore, suffix: "", decimals: 2 },
-  { icon: Clock, label: "Estimated Safe Time", value: AI_ASSESSMENT.safeMinutes, suffix: " min", decimals: 0 },
-];
+const ROUTE_RISK_DATA = {
+  distance: 522,
+  eta: "8.0h",
+  riskScore: 78,
+  riskLevel: "HIGH RISK",
+  hazards: [
+    {
+      id: "thermal-peak",
+      title: "Thermal Peak Warning",
+      location: "Segment 2 (Midway Transit)",
+      description:
+        "Ambient temp predicted to reach 38°C. Reefer compressor load will increase by 34%.",
+    },
+    {
+      id: "traffic-delay",
+      title: "Traffic Delay Anomaly",
+      location: "Highway Checkpoint B",
+      description:
+        "Predicted 35 min congestion bottleneck. Potential cold storage battery drain.",
+    },
+  ],
+  actions: [
+    "Pre-cool cargo bay to -2°C prior to departure.",
+    "Schedule secondary cooling cycle at Checkpoint B.",
+    "Reroute via Western Corridor to avoid thermal congestion.",
+  ],
+};
 
 export function RiskAssessment() {
   return (
-    <Section id="risk">
+    <Section id="route-risk">
       <Reveal>
-        <div
-          className="relative overflow-hidden rounded-[2rem] px-6 py-14 sm:px-12 lg:px-16"
-          style={{ backgroundImage: "var(--gradient-deep)" }}
-        >
-          <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-accent/25 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-32 -left-20 h-80 w-80 rounded-full bg-primary-glow/15 blur-3xl" />
+        <div className="mx-auto w-full max-w-lg rounded-3xl border border-emerald-900/40 bg-[#03150f] p-6 text-emerald-100 shadow-2xl sm:p-7">
+          {/* Header */}
+          <div className="flex items-center justify-between pb-6">
+            <div className="flex items-center gap-2.5">
+              <Sparkles className="h-5 w-5 text-lime-400" />
+              <h2 className="text-xl font-bold tracking-tight text-white">
+                AI Route Risk Model
+              </h2>
+            </div>
+            <span className="rounded-full border border-emerald-700/40 bg-emerald-950/60 px-3 py-1 text-[10px] font-bold tracking-wider text-emerald-400">
+              IHAT3 PREDICTOR
+            </span>
+          </div>
 
-          <div className="relative grid gap-14 lg:grid-cols-[380px_1fr] lg:items-center">
-            <div>
-              <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.22em] text-primary-foreground/60">
-                <Sparkles className="h-3.5 w-3.5 text-accent" />
-                AI Risk Assessment
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 mb-7">
+            {/* Distance & ETA */}
+            <div className="rounded-2xl border border-emerald-800/30 bg-[#072118] p-4.5">
+              <p className="text-[11px] font-medium text-emerald-400/80">
+                Distance & ETA
               </p>
-              <div className="mt-8">
-                <RiskGauge value={AI_ASSESSMENT.spoilageRisk} />
+              <div className="mt-2 flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-white font-mono">
+                  {ROUTE_RISK_DATA.distance} <span className="text-base font-normal">km</span>
+                </span>
+                <span className="text-base font-semibold text-emerald-400 font-mono">
+                  ({ROUTE_RISK_DATA.eta})
+                </span>
               </div>
             </div>
 
-            <div className="text-primary-foreground">
-              <h2 className="text-3xl font-semibold leading-tight sm:text-4xl">
-                The engine reasons about risk, not just readings.
-              </h2>
-
-              <div className="mt-9 grid gap-4 sm:grid-cols-3">
-                {METRICS.map((m, i) => (
-                  <motion.div
-                    key={m.label}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.15 + i * 0.1, duration: 0.6 }}
-                    whileHover={{ y: -6 }}
-                    className="rounded-2xl border border-primary-foreground/12 bg-primary-foreground/6 p-5 backdrop-blur"
-                  >
-                    <m.icon className="h-4.5 w-4.5 text-accent" />
-                    <p className="mt-4 font-display text-3xl font-bold tracking-tight">
-                      <Counter to={m.value} decimals={m.decimals} suffix={m.suffix} />
-                    </p>
-                    <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-primary-foreground/55">
-                      {m.label}
-                    </p>
-                  </motion.div>
-                ))}
-              </div>
-
-              <div className="mt-9 space-y-4">
-                <div className="flex gap-4 rounded-2xl border border-primary-foreground/12 bg-primary-foreground/5 p-5">
-                  <Brain className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-foreground/55">
-                      AI Explanation
-                    </p>
-                    <p className="mt-2 text-[15px] leading-relaxed text-primary-foreground/90">
-                      {AI_ASSESSMENT.explanation}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-4 rounded-2xl border border-accent/40 bg-accent/12 p-5">
-                  <Wrench className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary-foreground/55">
-                      Recommended Action
-                    </p>
-                    <p className="mt-2 text-[15px] font-semibold leading-relaxed">
-                      {AI_ASSESSMENT.recommendation}
-                    </p>
-                  </div>
-                </div>
+            {/* Predicted Risk Score */}
+            <div className="rounded-2xl border border-rose-900/40 bg-[#1f0b11] p-4.5">
+              <p className="text-[11px] font-medium text-rose-300/80">
+                Predicted Risk Score
+              </p>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-2xl font-bold text-rose-500 font-mono">
+                  <Counter to={ROUTE_RISK_DATA.riskScore} suffix="%" />
+                </span>
+                <span className="rounded-md bg-rose-950/90 px-2 py-0.5 text-[10px] font-bold tracking-wide text-rose-400 border border-rose-800/40">
+                  {ROUTE_RISK_DATA.riskLevel}
+                </span>
               </div>
             </div>
           </div>
+
+          {/* Route Hazards */}
+          <div className="mb-7">
+            <h3 className="mb-3 text-[11px] font-bold uppercase tracking-wider text-emerald-400/90">
+              Predicted Route Hazards
+            </h3>
+            <div className="space-y-3">
+              {ROUTE_RISK_DATA.hazards.map((hazard) => (
+                <div
+                  key={hazard.id}
+                  className="rounded-2xl border border-emerald-800/30 bg-[#062017] p-4 text-xs"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 font-bold text-amber-400">
+                      <AlertTriangle className="h-4 w-4 shrink-0" />
+                      <span>{hazard.title}</span>
+                    </div>
+                    <span className="text-[11px] font-mono text-emerald-500/80">
+                      {hazard.location}
+                    </span>
+                  </div>
+                  <p className="text-emerald-200/70 leading-relaxed font-sans text-[12px]">
+                    {hazard.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recommended Driver Actions */}
+          <div className="mb-7">
+            <h3 className="mb-3 text-[11px] font-bold uppercase tracking-wider text-emerald-400/90">
+              Recommended Driver Actions
+            </h3>
+            <div className="space-y-2.5">
+              {ROUTE_RISK_DATA.actions.map((action, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center gap-3 rounded-xl border border-emerald-800/30 bg-[#062017] px-4 py-3 text-xs text-emerald-100 font-sans"
+                >
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-lime-400" />
+                  <span>{action}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recalculate Action */}
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-lime-400 py-3.5 text-xs font-bold text-slate-950 transition-colors hover:bg-lime-300"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Recalculate Route Telemetry</span>
+          </motion.button>
         </div>
       </Reveal>
     </Section>

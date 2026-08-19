@@ -12,57 +12,7 @@ import {
   BrainCircuit,
 } from "lucide-react";
 
-/**
- * ChillChain AI — "AI Risk Assessment"
- * -----------------------------------------------------------------------
- * A compact, live-feeling dashboard section that reads as a real-time
- * intelligence pipeline rather than a static summary card:
- *
- *   LIVE SENSOR DATA  →  AI ANALYSIS  →  RISK DETECTION  →  ACTION
- *   (signal cards)       (radial gauge)   (severity + score)  (recommendation)
- *
- * Self-contained: no external design system, no backend calls. Mock data
- * only — wire the marked values up to your live feed / inference output.
- * -----------------------------------------------------------------------
- */
-
-// ---------------------------------------------------------------------------
-// Mock data — replace with live values.
-// ---------------------------------------------------------------------------
-
-const RISK_SCORE = 72; // 0–100
-const AI_CONFIDENCE = 94; // %
-
-const RISK_SIGNALS = [
-  {
-    id: "temperature",
-    label: "Temperature",
-    value: "+32% drift",
-    detail: "3.4°C above threshold",
-    icon: Thermometer,
-    tone: "critical" as const,
-  },
-  {
-    id: "humidity",
-    label: "Humidity",
-    value: "Unstable",
-    detail: "Fluctuating ±8% RH",
-    icon: Droplets,
-    tone: "warning" as const,
-  },
-  {
-    id: "route",
-    label: "Route Delay",
-    value: "+24 min",
-    detail: "Behind scheduled ETA",
-    icon: Clock,
-    tone: "warning" as const,
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Tone tokens — keep in sync with the rest of the ChillChain theme.
-// ---------------------------------------------------------------------------
+const API_BASE_URL = "http://localhost:5000";
 
 const toneStyles = {
   critical: {
@@ -94,10 +44,6 @@ function riskLabel(score: number): { label: string; tone: "critical" | "warning"
   return { label: "LOW RISK", tone: "safe" };
 }
 
-// ---------------------------------------------------------------------------
-// Hooks
-// ---------------------------------------------------------------------------
-
 function useCountUp(target: number, durationMs = 1400, startDelayMs = 150) {
   const [value, setValue] = useState(0);
 
@@ -124,7 +70,6 @@ function useCountUp(target: number, durationMs = 1400, startDelayMs = 150) {
   return value;
 }
 
-// Ticks up a "Xs ago" style live timestamp label.
 function useLiveTimestamp() {
   const [seconds, setSeconds] = useState(0);
 
@@ -138,7 +83,6 @@ function useLiveTimestamp() {
   return `Updated ${Math.floor(seconds / 60)}m ago`;
 }
 
-// Cycles through the pipeline labels to imply an active analysis loop.
 function useAnalysisStatus() {
   const stages = [
     "Reading live sensor data",
@@ -153,15 +97,10 @@ function useAnalysisStatus() {
       setIndex((i) => (i + 1) % stages.length);
     }, 2600);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return stages[index];
 }
-
-// ---------------------------------------------------------------------------
-// Small building blocks
-// ---------------------------------------------------------------------------
 
 function LiveDot({ color = "#1F7A4D", size = 8 }: { color?: string; size?: number }) {
   return (
@@ -180,7 +119,6 @@ function LiveDot({ color = "#1F7A4D", size = 8 }: { color?: string; size?: numbe
   );
 }
 
-// Thin animated dashed connector implying data flow between pipeline stages.
 function FlowConnector({ delay = 0 }: { delay?: number }) {
   return (
     <div className="relative hidden w-10 flex-shrink-0 items-center justify-center lg:flex">
@@ -196,10 +134,6 @@ function FlowConnector({ delay = 0 }: { delay?: number }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Radial risk gauge with ambient glow
-// ---------------------------------------------------------------------------
-
 function RiskGauge({ score }: { score: number }) {
   const size = 148;
   const stroke = 11;
@@ -212,7 +146,6 @@ function RiskGauge({ score }: { score: number }) {
 
   return (
     <div className="relative flex h-[148px] w-[148px] items-center justify-center">
-      {/* ambient pulsing glow behind the gauge */}
       <motion.div
         className="absolute inset-[-14px] rounded-full blur-xl"
         style={{ backgroundColor: styles.glow }}
@@ -242,7 +175,6 @@ function RiskGauge({ score }: { score: number }) {
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 1.5, ease: easeOut, delay: 0.2 }}
         />
-        {/* leading-edge dot to sell "live" motion at the gauge tip */}
         <motion.circle
           r={stroke / 2.4}
           fill={styles.solid}
@@ -266,17 +198,65 @@ function RiskGauge({ score }: { score: number }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main component
-// ---------------------------------------------------------------------------
-
-export default function AIRiskAssessment() {
+export default function AIRiskAssessment({ selectedShipmentId = "CG-10490" }: { selectedShipmentId?: string }) {
   const controls = useAnimation();
-  const confidence = useCountUp(AI_CONFIDENCE, 1300, 500);
-  const { label: scoreLabel, tone: scoreTone } = riskLabel(RISK_SCORE);
-  const scoreStyles = toneStyles[scoreTone];
   const timestamp = useLiveTimestamp();
   const analysisStatus = useAnalysisStatus();
+
+  // Dynamic AI State
+  const [aiData, setAiData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Fetch real-time AI Insights from Node.js backend
+  useEffect(() => {
+    if (!selectedShipmentId) return;
+
+    setLoading(true);
+    fetch(`${API_BASE_URL}/api/v1/ai/analyze/${selectedShipmentId}`)
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData.success) {
+          setAiData(resData.data);
+        }
+      })
+      .catch((err) => console.error("AI Insight fetch error:", err))
+      .finally(() => setLoading(false));
+  }, [selectedShipmentId]);
+
+  const riskScore = aiData?.riskScore ?? 72;
+  const aiConfidence = aiData?.confidence ?? 94;
+
+  const confidence = useCountUp(aiConfidence, 1300, 500);
+  const { label: scoreLabel, tone: scoreTone } = riskLabel(riskScore);
+  const scoreStyles = toneStyles[scoreTone];
+
+  // Map backend telemetry parameters to signal cards
+  const riskSignals = [
+    {
+      id: "temperature",
+      label: "Temperature",
+      value: aiData?.tempDrift ?? "+32% drift",
+      detail: aiData?.tempDetail ?? "3.4°C above threshold",
+      icon: Thermometer,
+      tone: (riskScore >= 70 ? "critical" : riskScore >= 40 ? "warning" : "safe") as const,
+    },
+    {
+      id: "humidity",
+      label: "Humidity",
+      value: aiData?.humidityStatus ?? "Unstable",
+      detail: "Fluctuating ±8% RH",
+      icon: Droplets,
+      tone: "warning" as const,
+    },
+    {
+      id: "route",
+      label: "Route Delay",
+      value: "+24 min",
+      detail: "Behind scheduled ETA",
+      icon: Clock,
+      tone: "warning" as const,
+    },
+  ];
 
   useEffect(() => {
     controls.start("visible");
@@ -285,7 +265,6 @@ export default function AIRiskAssessment() {
   return (
     <section className="w-full bg-[#FAF7F0] px-4 py-14 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-6xl">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 14 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -310,7 +289,6 @@ export default function AIRiskAssessment() {
           </div>
         </motion.div>
 
-        {/* Card */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -318,7 +296,6 @@ export default function AIRiskAssessment() {
           transition={{ duration: 0.65, ease: easeOut, delay: 0.1 }}
           className="relative overflow-hidden rounded-[28px] border border-[#E7E1D4] bg-white/80 shadow-[0_2px_8px_rgba(20,35,27,0.04),0_16px_40px_-24px_rgba(20,35,27,0.18)] backdrop-blur-sm"
         >
-          {/* Top strip: live status + analyzing ticker + timestamp */}
           <div className="flex flex-col gap-2 border-b border-[#EFEADD] bg-[#F7F4EA]/80 px-6 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-8">
             <div className="flex items-center gap-2">
               <LiveDot />
@@ -342,18 +319,17 @@ export default function AIRiskAssessment() {
             </div>
             <span className="flex items-center gap-1.5 text-[11px] font-medium text-[#8A8371]">
               <Radio className="h-3 w-3" strokeWidth={2.25} />
-              Shipment&nbsp;#CC-4471 · {timestamp}
+              Shipment #{selectedShipmentId} · {timestamp}
             </span>
           </div>
 
           <div className="flex flex-col gap-2 px-4 py-7 sm:px-6 lg:flex-row lg:items-stretch lg:gap-0 lg:px-8">
-            {/* STAGE 1 — Live sensor signals (IoT data in) */}
             <div className="flex flex-1 flex-col justify-center gap-3 py-3 lg:py-2">
               <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8A8371]">
                 Live Sensor Signals
               </span>
               <div className="flex flex-col gap-2.5">
-                {RISK_SIGNALS.map((signal, i) => {
+                {riskSignals.map((signal, i) => {
                   const styles = toneStyles[signal.tone];
                   const Icon = signal.icon;
                   return (
@@ -381,7 +357,7 @@ export default function AIRiskAssessment() {
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[13px] font-semibold ${styles.text}`}>
-                          {signal.value}
+                          {loading ? "..." : signal.value}
                         </span>
                         <LiveDot color={styles.solid} size={6} />
                       </div>
@@ -393,12 +369,11 @@ export default function AIRiskAssessment() {
 
             <FlowConnector delay={0} />
 
-            {/* STAGE 2 — AI risk score (analysis + detection) */}
             <div className="flex flex-col items-center justify-center gap-3 border-y border-[#EFEADD] py-6 lg:w-[220px] lg:flex-shrink-0 lg:border-x lg:border-y-0 lg:px-6">
               <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8A8371]">
                 AI Risk Score
               </span>
-              <RiskGauge score={RISK_SCORE} />
+              <RiskGauge score={riskScore} />
               <span
                 className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.08em] ${scoreStyles.bg} ${scoreStyles.text}`}
               >
@@ -408,7 +383,6 @@ export default function AIRiskAssessment() {
 
             <FlowConnector delay={1.1} />
 
-            {/* STAGE 3 — Recommended action */}
             <div className="flex flex-1 flex-col justify-center gap-4 py-3 lg:py-2">
               <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8A8371]">
                 Recommended Action
@@ -448,15 +422,14 @@ export default function AIRiskAssessment() {
                     <Wrench className="relative h-4 w-4 text-[#1F7A4D]" strokeWidth={2.25} />
                   </span>
                   <span className="text-[14.5px] font-semibold leading-snug text-[#14231B]">
-                    Inspect cooling system
+                    {loading ? "Analyzing..." : (aiData?.action ?? "Inspect cooling system")}
                   </span>
                 </div>
                 <p className="text-[13px] leading-relaxed text-[#5B5548]">
-                  Temperature trend indicates increasing spoilage risk.
+                  {loading ? "Generating real-time risk reasoning..." : (aiData?.reasoning ?? "Temperature trend indicates increasing spoilage risk.")}
                 </p>
               </motion.div>
 
-              {/* Confidence bar */}
               <div>
                 <div className="mb-1.5 flex items-center justify-between">
                   <span className="text-[11.5px] font-medium text-[#6B6355]">AI Confidence</span>
@@ -465,7 +438,7 @@ export default function AIRiskAssessment() {
                 <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-[#EFEADD]">
                   <motion.div
                     initial={{ width: 0 }}
-                    whileInView={{ width: `${AI_CONFIDENCE}%` }}
+                    whileInView={{ width: `${aiConfidence}%` }}
                     viewport={{ once: true }}
                     transition={{ duration: 1.3, ease: easeOut, delay: 0.45 }}
                     className="relative h-full overflow-hidden rounded-full bg-[#1F7A4D]"
