@@ -330,7 +330,7 @@ function Hero({ range, setRange, shipment, setShipment, shipmentsList }: any) {
         variants={heroContainer}
         initial="hidden"
         animate="show"
-        className="relative mx-auto max-w-[1240px] px-6 pb-10 pt-14"
+        className="relative mx-auto max-w-[1240px] px-4 pb-8 pt-10 sm:px-6 sm:pt-12"
       >
         <motion.div variants={heroItem} className="mb-5 flex items-center gap-3">
           <span
@@ -499,8 +499,8 @@ function KpiCard({ kpi, range, index }: any) {
 function KpiStrip({ range }: { range: string }) {
   const kpis = useMemo(() => scaleKpis(range), [range]);
   return (
-    <section className="mx-auto max-w-[1240px] px-6 py-10">
-      <div className="mb-5 flex items-center justify-between">
+    <section className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-9">
+      <div className="mb-4 flex items-center justify-between">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>
             KPI Intelligence
@@ -576,7 +576,7 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
   ];
 
   return (
-    <section className="mx-auto max-w-[1240px] px-6 pb-6">
+    <section className="mx-auto max-w-[1240px] px-4 pb-8 sm:px-6 sm:pb-9">
       <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>
         Temperature Intelligence
       </div>
@@ -588,7 +588,12 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
         drift, excursions and actionable risk.
       </p>
 
+<<<<<<< HEAD
       <div className="mt-7 grid grid-cols-1 gap-5 lg:grid-cols-[280px_1fr]">
+=======
+      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]">
+        {/* Left: current reading card */}
+>>>>>>> 107e674241d02ed26a884a7f7717eaf611b896dc
         <motion.div
           key={`side-${range}`}
           initial={{ opacity: 0, x: -12 }}
@@ -666,7 +671,7 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.35 }}
-              style={{ width: "100%", height: 300 }}
+              style={{ width: "100%", height: 280 }}
             >
               <ResponsiveContainer width="100%" height="100%">
                 <ComposedChart data={data} margin={{ top: 10, right: 12, left: -18, bottom: 0 }}>
@@ -727,7 +732,12 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
         </div>
       </div>
 
+<<<<<<< HEAD
       <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
+=======
+      {/* stat cards below chart */}
+      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+>>>>>>> 107e674241d02ed26a884a7f7717eaf611b896dc
         {statCards.map((s, i) => {
           const st = toneStyles[s.tone];
           const Icon = s.icon;
@@ -764,7 +774,7 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-10% 0px" }}
         transition={{ duration: 0.5 }}
-        className="mt-5 flex flex-col justify-between gap-4 rounded-[18px] p-6 sm:flex-row sm:items-center"
+        className="mt-4 flex flex-col justify-between gap-4 rounded-[18px] p-5 sm:flex-row sm:items-center sm:p-6"
         style={{ background: T.forest }}
       >
         <div className="flex items-start gap-3.5">
@@ -852,7 +862,7 @@ function RiskTrendChart({ range }: { range: string }) {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.35 }}
-          style={{ width: "100%", height: 260 }}
+          style={{ width: "100%", height: 240 }}
         >
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
@@ -938,7 +948,7 @@ function RiskDonut({ range }: { range: string }) {
         Current snapshot across {TOTAL_SHIPMENTS[range] || 24} shipments
       </div>
 
-      <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-6 sm:flex-row">
+      <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-4 sm:flex-row">
         <motion.svg
           width="220" height="220" viewBox="0 0 220 220"
           initial={{ opacity: 0, scale: 0.88, rotate: -8 }}
@@ -1006,8 +1016,8 @@ function RiskDonut({ range }: { range: string }) {
 
 function RiskIntelligence({ range }: { range: string }) {
   return (
-    <section className="mx-auto max-w-[1240px] px-6 py-10">
-      <div className="mb-5">
+    <section className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-9">
+      <div className="mb-4">
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>
           Risk Intelligence
         </div>
@@ -1090,8 +1100,8 @@ function RouteRow({ route, index }: any) {
 
 function RoutePerformance() {
   return (
-    <section className="mx-auto max-w-[1240px] px-6 py-10">
-      <div className="mb-5">
+    <section className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-9">
+      <div className="mb-4">
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>
           Route Performance
         </div>
@@ -1099,7 +1109,7 @@ function RoutePerformance() {
           Which corridors are performing, which need attention
         </h2>
       </div>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2.5">
         {ROUTES.map((r, i) => (
           <RouteRow key={r.id} route={r} index={i} />
         ))}
@@ -1196,8 +1206,8 @@ function SensorRow({ sensor, index }: any) {
 
 function SensorIntelligence() {
   return (
-    <section className="mx-auto max-w-[1240px] px-6 py-10">
-      <div className="mb-5">
+    <section className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-9">
+      <div className="mb-4">
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>
           Sensor Intelligence
         </div>
@@ -1223,13 +1233,13 @@ const patternField = [
 
 function AIPatternDetected() {
   return (
-    <section className="mx-auto max-w-[1240px] px-6 py-10">
+    <section className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-9">
       <motion.div
         initial={{ opacity: 0, y: 18 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-10% 0px" }}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="relative overflow-hidden rounded-[24px] p-7 sm:p-9"
+        className="relative overflow-hidden rounded-[24px] p-6 sm:p-8"
         style={{ background: `linear-gradient(155deg, ${T.forest} 0%, #0B2A1D 100%)` }}
       >
         <motion.div
@@ -1246,7 +1256,7 @@ function AIPatternDetected() {
         />
 
         <div className="relative">
-          <div className="mb-5 flex items-center justify-between">
+          <div className="mb-4 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-[11px]" style={{ background: "rgba(255,255,255,0.1)" }}>
                 <Brain size={17} color="#fff" />
@@ -1278,7 +1288,7 @@ function AIPatternDetected() {
             <span style={{ color: T.emeraldBright }}>Mumbai → Pune</span> corridor.
           </motion.h3>
 
-          <div className="mt-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {patternField.map((f, i) => (
               <motion.div
                 key={f.label}
@@ -1303,7 +1313,7 @@ function AIPatternDetected() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.5 }}
-            className="mt-7 flex flex-col items-start justify-between gap-4 border-t pt-6 sm:flex-row sm:items-center"
+            className="mt-6 flex flex-col items-start justify-between gap-4 border-t pt-5 sm:flex-row sm:items-center"
             style={{ borderColor: "rgba(255,255,255,0.1)" }}
           >
             <span className="text-[11.5px]" style={{ color: "rgba(255,255,255,0.55)" }}>
@@ -1328,7 +1338,7 @@ const IMPACT_METRICS = [
 
 function LossPrevention() {
   return (
-    <section className="mx-auto max-w-[1240px] px-6 py-14">
+    <section className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-[640px] text-center">
         <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>
           Business Impact
@@ -1342,7 +1352,7 @@ function LossPrevention() {
         </p>
       </div>
 
-      <div className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-[22px] border sm:grid-cols-2 lg:grid-cols-4" style={{ borderColor: T.line, background: T.line }}>
+      <div className="mt-8 grid grid-cols-1 gap-px overflow-hidden rounded-[22px] border sm:grid-cols-2 lg:grid-cols-4" style={{ borderColor: T.line, background: T.line }}>
         {IMPACT_METRICS.map((m, i) => (
           <motion.div
             key={m.label}
@@ -1350,7 +1360,7 @@ function LossPrevention() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-10% 0px" }}
             transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col items-center px-6 py-9 text-center"
+            className="flex flex-col items-center px-6 py-7 text-center"
             style={{ background: T.creamSoft }}
           >
             <div className="text-[38px] font-medium leading-none sm:text-[42px]" style={{ fontFamily: "'Fraunces', serif", color: T.forest }}>
@@ -1409,7 +1419,7 @@ export default function AnalyticsPage() {
   }, [shipment]);
 
   return (
-    <div style={{ background: T.cream, minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
+    <div className="overflow-x-hidden" style={{ background: T.cream, minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
       <style>{fontImport}</style>
 <<<<<<< HEAD
       <Navbar metrics={metrics} />
@@ -1430,8 +1440,13 @@ export default function AnalyticsPage() {
       <SensorIntelligence />
       <AIPatternDetected />
       <LossPrevention />
+<<<<<<< HEAD
       <div className="mx-auto max-w-[1240px] px-6 pb-16 pt-2 text-center text-[11.5px]" style={{ color: T.inkSoft }}>
         ChillChain AI · Hackathon build
+=======
+      <div className="mx-auto max-w-[1240px] px-4 pb-10 pt-1 text-center text-[11.5px] sm:px-6 sm:pb-12" style={{ color: T.inkSoft }}>
+        ChillChain AI · Analytics — SHT40 + ESP32 · AI Risk Engine · Hackathon build
+>>>>>>> 107e674241d02ed26a884a7f7717eaf611b896dc
       </div>
     </div>
   );
