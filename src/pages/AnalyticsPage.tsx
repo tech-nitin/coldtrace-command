@@ -229,76 +229,7 @@ const toneStyles: Record<string, { fg: string; bg: string; border: string }> = {
   bad: { fg: T.red, bg: T.redSoft, border: "#E7C3BF" },
 };
 
-function Navbar({ metrics }: { metrics: any }) {
-  const items = [
-    { label: "Overview", icon: LayoutDashboard },
-    { label: "Shipments", icon: Truck },
-    { label: "Live Tracking", icon: MapPin },
-    { label: "Analytics", icon: LineChartIcon, active: true },
-    { label: "AI Insights", icon: Sparkles },
-    { label: "Alerts", icon: Bell },
-  ];
-  return (
-    <div
-      className="sticky top-0 z-40 border-b backdrop-blur-md"
-      style={{ background: "rgba(246,243,234,0.86)", borderColor: T.line }}
-    >
-      <div className="mx-auto flex max-w-[1240px] items-center justify-between px-6 py-3.5">
-        <div className="flex items-center gap-2.5">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-[9px]"
-            style={{ background: T.forest }}
-          >
-            <span className="text-[13px] font-semibold text-white">C</span>
-          </div>
-          <div className="leading-tight">
-            <div className="text-[13.5px] font-semibold tracking-tight" style={{ color: T.ink }}>
-              ChillChain AI
-            </div>
-            <div className="text-[9.5px] font-medium uppercase tracking-[0.12em]" style={{ color: T.inkSoft }}>
-              Cold-Chain Intelligence
-            </div>
-          </div>
-        </div>
 
-        <nav className="hidden items-center gap-1 md:flex">
-          {items.map((it) => (
-            <button
-              key={it.label}
-              className="rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors"
-              style={
-                it.active
-                  ? { background: T.forest, color: "#fff" }
-                  : { color: T.inkSoft }
-              }
-            >
-              {it.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="flex items-center gap-3">
-          <div
-            className="hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium sm:flex"
-            style={{ borderColor: T.mintLine, background: T.mint, color: T.emerald }}
-          >
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-70" style={{ background: T.emerald }} />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: T.emerald }} />
-            </span>
-            {metrics ? `${metrics.sensorNetwork?.online || 6}/${metrics.sensorNetwork?.total || 6} Sensors Online` : "6 Sensors Online"}
-          </div>
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-semibold text-white"
-            style={{ background: T.emerald }}
-          >
-            N
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const heroContainer = {
   hidden: {},
@@ -588,12 +519,7 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
         drift, excursions and actionable risk.
       </p>
 
-<<<<<<< HEAD
       <div className="mt-7 grid grid-cols-1 gap-5 lg:grid-cols-[280px_1fr]">
-=======
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[260px_1fr]">
-        {/* Left: current reading card */}
->>>>>>> 107e674241d02ed26a884a7f7717eaf611b896dc
         <motion.div
           key={`side-${range}`}
           initial={{ opacity: 0, x: -12 }}
@@ -732,12 +658,7 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
         </div>
       </div>
 
-<<<<<<< HEAD
       <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
-=======
-      {/* stat cards below chart */}
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
->>>>>>> 107e674241d02ed26a884a7f7717eaf611b896dc
         {statCards.map((s, i) => {
           const st = toneStyles[s.tone];
           const Icon = s.icon;
@@ -1421,8 +1342,6 @@ export default function AnalyticsPage() {
   return (
     <div className="overflow-x-hidden" style={{ background: T.cream, minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
       <style>{fontImport}</style>
-<<<<<<< HEAD
-      <Navbar metrics={metrics} />
       <Hero
         range={range}
         setRange={setRange}
@@ -1430,9 +1349,6 @@ export default function AnalyticsPage() {
         setShipment={setShipment}
         shipmentsList={shipmentsList}
       />
-=======
-      <Hero range={range} setRange={setRange} shipment={shipment} setShipment={setShipment} />
->>>>>>> upstream/main
       <KpiStrip range={range} />
       <TemperatureChart range={range} liveTelemetry={liveTelemetry} />
       <RiskIntelligence range={range} />
@@ -1440,13 +1356,8 @@ export default function AnalyticsPage() {
       <SensorIntelligence />
       <AIPatternDetected />
       <LossPrevention />
-<<<<<<< HEAD
       <div className="mx-auto max-w-[1240px] px-6 pb-16 pt-2 text-center text-[11.5px]" style={{ color: T.inkSoft }}>
         ChillChain AI · Hackathon build
-=======
-      <div className="mx-auto max-w-[1240px] px-4 pb-10 pt-1 text-center text-[11.5px] sm:px-6 sm:pb-12" style={{ color: T.inkSoft }}>
-        ChillChain AI · Analytics — SHT40 + ESP32 · AI Risk Engine · Hackathon build
->>>>>>> 107e674241d02ed26a884a7f7717eaf611b896dc
       </div>
     </div>
   );

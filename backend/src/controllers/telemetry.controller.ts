@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import Telemetry from '../models/Telemetry.js';
+import {Telemetry} from '../models/Telemetry.js';
 import Shipment from '../models/Shipment.js';
 import { calculateCargoHealth } from '../utils/healthCalculator.js';
 import { socketService } from '../services/socket.service.js';

@@ -1,3 +1,8 @@
+import dns from "node:dns";
+// Force IPv4 first to prevent dual-stack DNS resolution delays on IPv6
+dns.setDefaultResultOrder("ipv4first");
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";

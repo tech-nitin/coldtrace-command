@@ -1,422 +1,606 @@
-# ChillChain Command
+# ❄️ ChillChain AI
 
-Create a completely new, premium and highly animated dashboard from scratch for our hackathon project:
+> **AI-Powered Cold-Chain Intelligence for Temperature-Sensitive
+> Shipments**
 
-ChillChain AI
+ChillChain AI is an IoT + AI-powered cold-chain monitoring platform
+designed to help protect temperature-sensitive agricultural and
+perishable shipments. It combines real-time sensor telemetry, GPS
+tracking, risk analysis, alerts, shipment intelligence, and a live
+command-center dashboard.
 
-AI-Powered Cold-Chain Intelligence
+![ChillChain
+AI](https://img.shields.io/badge/ChillChain-AI-14532D?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Hackathon%20Build-16A34A?style=for-the-badge)
+![IoT](https://img.shields.io/badge/IoT-Live%20Telemetry-0F766E?style=for-the-badge)
 
-ChillChain is an IoT + AI platform for monitoring temperature-sensitive agricultural shipments. An SHT40 temperature/humidity sensor connected to an ESP32 collects real-time data, which is sent to the backend and analyzed by an AI/ML risk engine.
+------------------------------------------------------------------------
 
-The system detects abnormal temperature/humidity patterns, predicts spoilage risk, calculates shipment health, tracks shipments and recommends corrective actions.
+## 🚚 The Problem
 
-DESIGN GOAL:
+Cold-chain failures can cause:
 
-Create a visually impressive, modern and premium dashboard that looks like a real AgriTech/logistics startup product and is impressive during a hackathon presentation.
+-   ❌ Product spoilage
+-   ❌ Financial losses
+-   ❌ Temperature excursions
+-   ❌ Poor visibility during transportation
+-   ❌ Delayed detection of refrigeration problems
 
-STYLE:
+Traditional monitoring systems often detect a problem **after the
+shipment has already been compromised**.
 
-- Green + white visual identity
+### ChillChain AI changes that.
 
-- Deep forest green and emerald accents
+> **Protect every shipment before spoilage happens.**
 
-- Warm off-white background
+------------------------------------------------------------------------
 
-- Dark elegant typography
+## ✨ What ChillChain AI Does
 
-- Premium SaaS/logistics aesthetic
+``` text
+Sensors
+   ↓
+NodeMCU ESP8266
+   ↓
+Wi-Fi
+   ↓
+Backend API
+   ↓
+MongoDB
+   ↓
+AI Risk Engine
+   ↓
+ChillChain Command Dashboard
+```
 
-- Large whitespace
+ChillChain continuously processes telemetry data to:
 
-- Subtle gradients, borders and shadows
+-   🌡️ Monitor temperature
+-   💧 Monitor humidity
+-   📍 Track shipment location
+-   🚨 Detect unsafe conditions
+-   📊 Calculate shipment health
+-   🤖 Estimate spoilage risk
+-   ⚠️ Generate alerts
+-   🧠 Recommend corrective actions
 
-- Some floating/tilted cards
+------------------------------------------------------------------------
 
-- Strong visual hierarchy
+# 🖥️ ChillChain Command
 
-- Highly polished micro-interactions
+The project is centered around a premium live cold-chain command center
+built for real-time decision-making.
 
-Avoid:
+## First View
 
-- Purple/neon AI themes
+### **Protect Every Shipment. Before Spoilage Happens.**
 
-- Cyberpunk
+The dashboard provides a live operational overview with:
 
-- Excessive glassmorphism
+-   Live cold-chain status
+-   Animated shipment metrics
+-   Refrigerated shipment visualization
+-   Real-time sensor data
+-   Shipment health indicators
+-   AI-powered risk analysis
 
-- Cartoonish illustrations
+------------------------------------------------------------------------
 
-- Generic admin dashboard
+## 📊 Dashboard Features
 
-- Making every section a card
+### 🌡️ Temperature Intelligence
 
-ANIMATION:
+A live telemetry visualization for:
 
-Make the page highly animated but professional:
-
-- Smooth page-load animation
-
-- Staggered section reveals
-
-- Animated counters
-
-- Charts draw/animate on load
-
-- Pulsing live-status indicators
-
-- Animated shipment routes
-
-- Floating sensor data around the hero visual
-
-- Hover tilt on selected cards
-
-- Smooth hover transitions
-
-- Alert slide-in animations
-
-- Animated AI risk gauge
-
-- Smooth scrolling
-
-FIRST VIEW / HERO:
-
-Create a large split-screen hero.
-
-LEFT:
-
-Small badge:
-
-"LIVE COLD-CHAIN INTELLIGENCE"
-
-Headline:
-
-"Protect Every Shipment. Before Spoilage Happens."
-
-Description:
-
-"ChillChain transforms real-time IoT data into AI-powered shipment intelligence, helping detect risk and prevent cold-chain losses."
-
-Buttons:
-
-"View Live Shipments"
-
-"Run Live Simulation"
-
-RIGHT:
-
-Show a realistic refrigerated agricultural delivery truck carrying fresh fruits/vegetables.
-
-Around the truck, add subtle floating live-data elements:
-
-4.8°C
-
-Temperature
-
-68%
-
-Humidity
-
-92/100
-
-Shipment Health
-
-● LIVE
-
-Status
-
-Make the truck look realistic and integrated into the interface.
-
-KPI SECTION:
-
-Show animated metrics:
-
-24
-
-Total Shipments
-
-18
-
-In Transit
-
-3
-
-At Risk
-
-1
-
-Critical Alert
-
-78/100
-
-Average Health
-
-Use subtle green, amber and red status indicators.
-
-TEMPERATURE INTELLIGENCE:
-
-Create a large centerpiece section.
-
-Show an animated professional line chart with:
-
-- Current temperature
-
-- Safe operating range
-
-- Critical threshold
-
-- Temperature excursions
-
-- 24H / 7D / 30D filters
-
-- Shipment selector
+-   Current temperature
+-   Safe operating range
+-   Critical thresholds
+-   Temperature excursions
+-   24H / 7D / 30D history
+-   Shipment selection
 
 Example:
 
+``` text
 11.8°C
-
 CRITICAL
-
 Threshold Breached
+```
 
-AI RISK ASSESSMENT:
+------------------------------------------------------------------------
 
-Create a visually distinctive section.
+### 🤖 AI Risk Assessment
 
-Show:
+ChillChain converts sensor telemetry into actionable risk intelligence.
 
-72% Spoilage Risk
+The AI/risk engine evaluates:
 
-28/100 Shipment Health
+-   Temperature excursions
+-   Humidity conditions
+-   Unsafe exposure duration
+-   Anomaly patterns
+-   Shipment health
 
-0.87 Anomaly Score
+Example output:
 
-18 min Estimated Safe Time
+``` text
+Spoilage Risk: 72%
+Shipment Health: 28/100
+Anomaly Score: 0.87
+Estimated Safe Time: 18 min
+```
 
-AI explanation:
+Example explanation:
 
-"Temperature has remained above the safe range for 38 minutes, indicating possible refrigeration degradation."
+> Temperature has remained above the safe range for an extended period,
+> indicating possible refrigeration degradation.
 
-Recommendation:
+Recommended action:
 
-"Inspect refrigeration and prioritize delivery."
+> Inspect refrigeration and prioritize delivery.
 
-Use an animated risk gauge/progress visualization.
+------------------------------------------------------------------------
 
-LIVE SHIPMENT MAP:
+### 📍 Live Shipment Tracking
 
-Create a large India map.
+The platform supports shipment tracking using GPS telemetry.
 
-Show routes:
+Example routes:
 
-Delhi → Indore
+-   Delhi → Indore
+-   Mumbai → Bhopal
+-   Pune → Nagpur
+-   Delhi → Kolkata
 
-Mumbai → Bhopal
+Shipment status indicators:
 
-Pune → Nagpur
+  Status        Meaning
+  ------------- ---------------------------
+  🟢 Healthy    Safe operating conditions
+  🟡 Warning    Risk increasing
+  🔴 Critical   Immediate action required
 
-Delhi → Kolkata
+------------------------------------------------------------------------
 
-Markers:
+### 🚛 Active Shipments
 
-Green = Healthy
+The shipment management view is designed to display:
 
-Amber = Warning
+  ---------------------------------------------------------------------------------------
+  Shipment   Product   Route      Temperature   Humidity     Health       Risk Status
+  ID                                                                           
+  ---------- --------- -------- ------------- ---------- ---------- ---------- ----------
+  CHL-001    Fruits    Delhi →          4.8°C        68%     92/100        Low 🟢 Healthy
+                       Indore                                                  
 
-Red = Critical
+  CHL-002    Dairy     Mumbai →         9.6°C        72%     48/100     Medium 🟡 Warning
+                       Bhopal                                                  
 
-Add subtle animated route movement.
+  CHL-003    Seafood   Pune →          11.8°C        81%     28/100       High 🔴
+                       Nagpur                                                  Critical
+  ---------------------------------------------------------------------------------------
 
-ACTIVE SHIPMENTS:
+------------------------------------------------------------------------
 
-Create a premium table with:
+## 🛂 Shipment Health Passport
 
-Shipment ID
+### **Every Shipment Has a Health Story.**
 
-Product
+A signature ChillChain feature that summarizes the health of an
+individual shipment.
 
-Route
+Example:
 
-Temperature
-
-Humidity
-
-Health Score
-
-Risk
-
-Status
-
-Last Updated
-
-Products:
-
-Fruits
-
-Vegetables
-
-Dairy
-
-Seafood
-
-Vaccines
-
-ANALYTICS:
-
-Create a visually rich analytics section with large charts, not many tiny cards.
-
-Include:
-
-- Temperature trends
-
-- Humidity trends
-
-- Risk distribution
-
-- Temperature excursions
-
-- Unsafe exposure time
-
-- Shipment health trends
-
-SHIPMENT HEALTH PASSPORT:
-
-Make this a signature ChillChain feature.
-
-Title:
-
-"Every Shipment Has a Health Story."
-
-Show:
-
-CG-10458
-
-Fresh Produce Batch 12C
-
-Indore → Delhi
+``` text
+Shipment: CHL-10458
+Product: Fresh Produce Batch 12C
+Route: Indore → Delhi
 
 Health Score: 28/100
-
 Spoilage Risk: 72%
-
 Maximum Temperature: 11.8°C
-
 Unsafe Exposure: 47 min
-
 Temperature Excursions: 3
+```
 
-Add an animated shipment journey timeline.
+The Health Passport is designed to show the complete journey and
+condition history of a shipment.
 
-ALERT CENTER:
+------------------------------------------------------------------------
 
-Show live alerts:
+## 🚨 Alert Center
 
-🔴 Temperature Breach
+ChillChain can surface operational events such as:
 
-🟡 Humidity Warning
+-   🔴 Temperature Breach
+-   🟡 Humidity Warning
+-   🟡 Route Deviation
+-   🔴 Sensor Offline
+-   🟢 Temperature Normalized
 
-🟡 Route Deviation
+Alerts are designed for fast operator response.
 
-🔴 Sensor Offline
+------------------------------------------------------------------------
 
-🟢 Temperature Normalized
+# 🔌 IoT Hardware
 
-Use smooth animated alert transitions.
+## Currently Available
 
-IOT SYSTEM:
+-   NodeMCU ESP8266 Development Board
+-   ESP8266 breakout module (backup)
+-   Digital & Analog I/O Board V2
+-   LM35 temperature sensor
+-   Onboard buzzer
+-   LEDs and push buttons
+-   16×2 LCD
+-   Breadboard
+-   Jumper wires
+-   5V USB charger
+-   NEO-6M GPS module
+-   Micro-USB data cable
 
-Create a beautiful visual architecture section:
+## Planned / To Arrange
 
-SHT40
+### Current Prototype
 
-↓
+-   DHT11 humidity sensor, if available
+-   DHT22 as the alternative humidity sensor
+-   I2C interface/backpack for the 16×2 LCD
 
-ESP32
+### Portable Final Prototype
 
-↓
+-   2 × 3.7V lithium-ion cells
+-   2-cell battery holder
+-   5V buck converter
+-   2S BMS/protection board
+-   Compatible 8.4V 2S charger
 
-Wi-Fi
+### Final Assembly
 
-↓
+-   Silicone wire
+-   Zero PCB / perfboard
+-   On/off switch
+-   Connectors/header pins
+-   Project enclosure
 
-Backend
+------------------------------------------------------------------------
 
-↓
+## 🧩 Hardware Architecture
 
-AI Risk Engine
+``` text
+LM35 ───────────────┐
+                    │
+DHT11 / DHT22 ──────┼──→ NodeMCU ESP8266 ──→ Wi-Fi ──→ Backend
+                    │
+NEO-6M GPS ─────────┤
+                    │
+I/O Board Buzzer ───┘
+                    │
+                    └──→ 16×2 LCD
+```
 
-↓
+### Hardware Responsibilities
 
-ChillChain Dashboard
+  Component          Purpose
+  ------------------ --------------------------------
+  NodeMCU ESP8266    Main IoT controller + Wi-Fi
+  LM35               Temperature monitoring
+  DHT11/DHT22        Humidity monitoring
+  NEO-6M             GPS location tracking
+  16×2 LCD + I2C     Local status display
+  I/O board buzzer   Local critical alert
+  Battery system     Portable final prototype power
 
-Show animated connection lines and online indicators.
+> The separate ESP8266 module is available as backup; the NodeMCU is the
+> main controller.
 
-IMPORTANT:
+------------------------------------------------------------------------
 
-Do NOT make the entire page a grid of cards.
+# 🧠 AI & Risk Intelligence
 
-Use a mixture of:
+ChillChain is structured around a risk-analysis pipeline.
 
-- Large hero section
+``` text
+Telemetry
+   ↓
+Validation
+   ↓
+Threshold Analysis
+   ↓
+Anomaly Detection
+   ↓
+Risk Calculation
+   ↓
+Shipment Health Update
+   ↓
+Alerts + Recommendations
+```
 
-- Full-width sections
+Planned shipment states:
 
-- Charts
+``` text
+HEALTHY
+AT_RISK
+CRITICAL
+```
 
-- Map
+Example risk inputs:
 
-- Tables
+-   Temperature above safe range
+-   Temperature excursion frequency
+-   Unsafe exposure duration
+-   Humidity abnormalities
+-   Sensor anomalies
+-   GPS/route deviations
 
-- Timeline
+------------------------------------------------------------------------
 
-- Floating/tilted cards
+# 🏗️ System Architecture
 
-- Data visualizations
+``` text
+┌──────────────────────┐
+│   IoT Sensors        │
+│ LM35 • DHT • GPS     │
+└──────────┬───────────┘
+           ↓
+┌──────────────────────┐
+│  NodeMCU ESP8266     │
+│  Sensor Collection   │
+└──────────┬───────────┘
+           ↓ Wi-Fi
+┌──────────────────────┐
+│   Express Backend    │
+│   Validation + APIs  │
+└──────────┬───────────┘
+           ↓
+┌──────────────────────┐
+│      MongoDB         │
+│ Shipments/Telemetry  │
+│       Alerts         │
+└──────────┬───────────┘
+           ↓
+┌──────────────────────┐
+│   AI Risk Engine     │
+│ Risk + Health Score  │
+└──────────┬───────────┘
+           ↓
+┌──────────────────────┐
+│ ChillChain Dashboard │
+│  React + Live Data   │
+└──────────────────────┘
+```
 
-- Whitespace
+------------------------------------------------------------------------
 
-The dashboard should feel like a LIVE COLD-CHAIN COMMAND CENTER.
+# 🛠️ Tech Stack
 
-Use realistic mock data but structure the frontend so it can later connect to our real ESP32/backend APIs.
+## Frontend
 
-TECH:
+-   React
+-   TypeScript
+-   Tailwind CSS
+-   Framer Motion
+-   Recharts
+-   Lucide React
+-   Leaflet / OpenStreetMap
+-   TanStack Router
 
-React + TypeScript
+## Backend
 
-Tailwind CSS
+-   Node.js
+-   Express
+-   TypeScript
+-   MongoDB
+-   Mongoose
+-   REST APIs
 
-Framer Motion
+## IoT
 
-Recharts
+-   NodeMCU ESP8266
+-   LM35
+-   DHT11 / DHT22
+-   NEO-6M GPS
+-   Wi-Fi
 
-Lucide React
+------------------------------------------------------------------------
 
-Leaflet/OpenStreetMap
+# 📁 Project Structure
 
-Make it fully responsive.
+``` text
+chillchain/
+├── frontend/
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       ├── hooks/
+│       ├── lib/
+│       ├── types/
+│       └── routes/
+│
+├── backend/
+│   └── src/
+│       ├── controllers/
+│       ├── models/
+│       ├── routes/
+│       ├── middleware/
+│       ├── services/
+│       └── config/
+│
+├── firmware/
+│   └── NodeMCU sensor code
+│
+└── README.md
+```
 
-The first viewport must be extremely impressive because this dashboard will be directly presented to hackathon judges.
+------------------------------------------------------------------------
 
-Final feeling:
+# 🚀 Backend Development Priority
 
-PREMIUM + LIVE + INTELLIGENT + AGRITECH + LOGISTICS + IoT + AI
+## Priority 1 --- Foundation
 
-This project was built with [](https://.dev).
+-   [ ] Express + TypeScript setup
+-   [ ] Environment variables
+-   [ ] MongoDB connection
+-   [ ] Error-handling middleware
+-   [ ] Health check API
 
-## Build with
+## Priority 2 --- Data Models
 
-Continue developing this project in the [ editor](https://.dev/projects/2f5aa2c8-d80e-4219-a314-8f79d63dda50).
+-   [ ] Shipment model
+-   [ ] Telemetry model
+-   [ ] Alert model
 
-- **Ship faster**: describe what you want to build and handles the code.
-- **Stay in sync**: every change made in is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into , ready for your next prompt.
+## Priority 3 --- Core APIs
 
-## Development
+-   [ ] Dashboard metrics
+-   [ ] Get all shipments
+-   [ ] Get shipment by ID
+-   [ ] Receive telemetry from NodeMCU
+-   [ ] Get latest telemetry
+-   [ ] Get telemetry history
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+## Priority 4 --- IoT Integration
 
-```sh
-git clone <this-repository-url>
+``` text
+Sensor → NodeMCU → Backend API → MongoDB → Frontend
+```
+
+-   [ ] Test telemetry API
+-   [ ] Validate sensor data
+-   [ ] Store telemetry
+-   [ ] Connect NodeMCU
+-   [ ] Send periodic readings
+
+## Priority 5 --- Intelligence
+
+-   [ ] Temperature/humidity threshold detection
+-   [ ] Risk calculation
+-   [ ] Update HEALTHY / AT_RISK / CRITICAL
+-   [ ] Generate alerts
+-   [ ] Track unsafe exposure duration
+
+## Priority 6 --- GPS
+
+-   [ ] Store GPS coordinates
+-   [ ] Latest location API
+-   [ ] Location history API
+-   [ ] Connect map to live data
+
+## Priority 7 --- Authentication
+
+-   [ ] Registration/login
+-   [ ] JWT authentication
+-   [ ] Protected routes
+-   [ ] User-shipment association
+
+## Priority 8 --- Real-Time
+
+-   [ ] Socket.IO
+-   [ ] Live telemetry updates
+-   [ ] Live alerts
+-   [ ] Live shipment positions
+
+------------------------------------------------------------------------
+
+# 🔄 Current Development Status
+
+## Frontend
+
+-   [x] Dashboard UI created
+-   [x] Core pages created
+-   [x] Telemetry simulation implemented
+-   [x] Temperature Intelligence connected to simulated live telemetry
+-   [ ] Final UI refinement
+-   [ ] Whitespace and responsive improvements
+-   [ ] Replace mock data with backend APIs
+
+## Backend
+
+-   [x] Shipment controller started
+-   [x] Metrics endpoint logic started
+-   [x] Shipment list endpoint logic started
+-   [x] Shipment-by-ID endpoint logic started
+-   [ ] Telemetry model
+-   [ ] Telemetry ingestion API
+-   [ ] Latest telemetry API
+-   [ ] Telemetry history API
+-   [ ] Alert model and risk engine
+
+## Hardware
+
+-   [x] NodeMCU ESP8266 available
+-   [x] LM35 available
+-   [x] GPS available
+-   [x] LCD available
+-   [x] I/O board buzzer available
+-   [ ] Confirm DHT11 availability
+-   [ ] Use DHT22 if DHT11 is unavailable
+-   [ ] Portable power system
+-   [ ] Final perfboard assembly
+
+------------------------------------------------------------------------
+
+# ⚡ Getting Started
+
+## Prerequisites
+
+-   Node.js
+-   npm
+-   MongoDB
+-   Git
+
+## Clone the Repository
+
+``` bash
+git clone <repository-url>
 cd <repository-name>
-npm i
+```
+
+## Install Dependencies
+
+``` bash
+npm install
+```
+
+## Run Development Server
+
+``` bash
 npm run dev
 ```
+
+The development server will start on the configured local URL.
+
+------------------------------------------------------------------------
+
+# 🌍 Future Vision
+
+-   Multi-shipment monitoring
+-   Live WebSocket updates
+-   AI spoilage prediction
+-   Advanced anomaly detection
+-   GPS geofencing
+-   Predictive refrigeration failure detection
+-   Automated escalation
+-   Mobile monitoring
+-   Exportable shipment health reports
+
+------------------------------------------------------------------------
+
+# 🏆 Built For
+
+**Hackathon Prototype / Cold-Chain Intelligence**
+
+ChillChain AI is designed to demonstrate how:
+
+> **IoT + Real-Time Data + AI + Intelligent Visualization**
+
+can help make cold-chain logistics more proactive, visible, and
+resilient.
+
+------------------------------------------------------------------------
+
+## ❄️ ChillChain AI
+
+### **Premium. Live. Intelligent.**
+
+**Protect Every Shipment. Before Spoilage Happens.**
