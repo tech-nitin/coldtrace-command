@@ -6,10 +6,10 @@ import { LiveDot } from "./primitives";
 const LINKS = [
   { to: "/", label: "Overview" },
   { to: "/shipments", label: "Shipments" },
-  { to: "/live-tracking", label: "Live Tracking" },
+  // { to: "/live-tracking", label: "Live Tracking" },
   { to: "/analytics", label: "Analytics" },
-  { to: "/ai-insights", label: "AI Insights" },
-  { to: "/alerts", label: "Alerts" },
+  // { to: "/ai-insights", label: "AI Insights" },
+  // { to: "/alerts", label: "Alerts" },
   { to: "/devices", label: "Devices" },
 ];
 

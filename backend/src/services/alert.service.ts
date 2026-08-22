@@ -1,5 +1,5 @@
 import { Alert } from '../models/Alert.js';
-import { Shipment } from '../models/Shipment.js';
+import  Shipment  from '../models/Shipment.js';
 
 export const evaluateTelemetryAlerts = async (
   deviceId: string,
@@ -11,8 +11,7 @@ export const evaluateTelemetryAlerts = async (
   const shipment = await Shipment.findOne({ shipmentCode: shipmentId });
   if (!shipment) return null;
 
-  const { min, max } = shipment.tempThresholds || { min: 2.0, max: 8.0 };
-
+  const { minTemp: min, maxTemp: max } = shipment.thresholds || { minTemp: 2.0, maxTemp: 8.0 };
   let alertTriggered = false;
   let alertType: 'TEMP_EXCEEDED' | 'TEMP_TOO_LOW' = 'TEMP_EXCEEDED';
   let thresholdLimit = max;
@@ -49,7 +48,7 @@ export const evaluateTelemetryAlerts = async (
     });
 
     // Mark shipment status as COMPROMISED
-    shipment.status = 'COMPROMISED';
+    shipment.status = 'CRITICAL';
     await shipment.save();
 
     return newAlert;

@@ -39,7 +39,7 @@ import { io, Socket } from "socket.io-client";
 const API_BASE_URL = "http://localhost:5000";
 
 /* ------------------------------------------------------------------ */
-/*  GLOBAL MOTION + TYPE STYLES (CSS-driven, Framer-Motion-equivalent)  */
+/*  GLOBAL MOTION + TYPE STYLES                                       */
 /* ------------------------------------------------------------------ */
 
 const MotionStyles = () => (
@@ -67,10 +67,6 @@ const MotionStyles = () => (
       0%, 100% { opacity: 0.35; }
       50% { opacity: 0.55; }
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
 
     .route-flow { animation: routeFlow 1.6s linear infinite; }
     .radar-ring { transform-origin: center; transform-box: fill-box; animation: radarPulse 2.6s ease-out infinite; }
@@ -84,6 +80,7 @@ const MotionStyles = () => (
 /*  STATIC COORDINATES & MAP TOKEN STYLES                            */
 /* ------------------------------------------------------------------ */
 
+// Expanded city coordinates to prevent undefined positions on new shipments
 const CITIES: Record<string, { x: number; y: number }> = {
   Delhi: { x: 300, y: 48 },
   Jaipur: { x: 228, y: 128 },
@@ -92,16 +89,8 @@ const CITIES: Record<string, { x: number; y: number }> = {
   Nagpur: { x: 432, y: 328 },
   Mumbai: { x: 168, y: 390 },
   Pune: { x: 230, y: 430 },
+  Raipur: { x: 490, y: 280 },
 };
-
-const ROUTES = [
-  { id: "r1", from: "Indore", to: "Bhopal" },
-  { id: "r2", from: "Indore", to: "Delhi" },
-  { id: "r3", from: "Mumbai", to: "Pune" },
-  { id: "r4", from: "Bhopal", to: "Jaipur" },
-  { id: "r5", from: "Jaipur", to: "Indore" },
-  { id: "r6", from: "Bhopal", to: "Nagpur" },
-];
 
 const STATUS: Record<string, any> = {
   healthy: {
@@ -112,7 +101,6 @@ const STATUS: Record<string, any> = {
     border: "border-emerald-200",
     hex: "#10b981",
     weight: 1,
-    flowDuration: "2.2s",
   },
   warning: {
     label: "At Risk",
@@ -122,7 +110,6 @@ const STATUS: Record<string, any> = {
     border: "border-amber-200",
     hex: "#d97706",
     weight: 2,
-    flowDuration: "1.3s",
   },
   critical: {
     label: "Critical",
@@ -132,7 +119,6 @@ const STATUS: Record<string, any> = {
     border: "border-red-200",
     hex: "#dc2626",
     weight: 3,
-    flowDuration: "0.8s",
   },
 };
 
@@ -176,26 +162,19 @@ const INITIAL_SHIPMENTS = [
     eta: "3h 05m",
     progress: 0.4,
   },
-  {
-    id: "CG-10422",
-    product: "Meat",
-    from: "Jaipur",
-    to: "Indore",
-    status: "healthy",
-    temp: 4.1,
-    humidity: 65,
-    health: 95,
-    risk: "LOW",
-    eta: "4h 20m",
-    progress: 0.2,
-  },
 ];
-
-const TREND = [{ v: 78 }, { v: 81 }, { v: 79 }, { v: 84 }, { v: 82 }, { v: 86 }, { v: 86 }];
 
 /* ------------------------------------------------------------------ */
 /*  HELPERS                                                           */
 /* ------------------------------------------------------------------ */
+
+function normalizeStatus(statusStr: string): string {
+  if (!statusStr) return "healthy";
+  const s = statusStr.toUpperCase();
+  if (s === "CRITICAL") return "critical";
+  if (s === "AT_RISK" || s === "WARNING") return "warning";
+  return "healthy";
+}
 
 function pointOnRoute(from: string, to: string, t: number) {
   const a = CITIES[from] || CITIES["Mumbai"];
@@ -213,10 +192,6 @@ function curvePath(from: string, to: string) {
   const mx = (a.x + b.x) / 2 + (a.y - b.y) * 0.08;
   const my = (a.y + b.y) / 2 + (b.x - a.x) * 0.08;
   return `M ${a.x} ${a.y} Q ${mx} ${my} ${b.x} ${b.y}`;
-}
-
-function routeKey(from: string, to: string) {
-  return [from, to].sort().join("__");
 }
 
 function formatAgo(ms: number) {
@@ -267,7 +242,7 @@ function Reveal({ children, delay = 0, y = 12, className = "" }: any) {
   );
 }
 
-function HealthRing({ value, hex, size = 40, stroke = 4 }: any) {
+function HealthRing({ value = 100, hex, size = 40, stroke = 4 }: any) {
   const [shown, setShown] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => setShown(value), 40);
@@ -308,7 +283,7 @@ function HealthRing({ value, hex, size = 40, stroke = 4 }: any) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  TRACKING HERO                                                       */
+/*  HERO COMPONENT                                                    */
 /* ------------------------------------------------------------------ */
 
 function TrackingHero({ activeCount }: { activeCount: number }) {
@@ -399,11 +374,11 @@ function TrackingHero({ activeCount }: { activeCount: number }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  SHIPMENT MARKER                                                     */
+/*  SHIPMENT MARKER                                                   */
 /* ------------------------------------------------------------------ */
 
 function ShipmentMarker({ shipment, selected, hovered, dimmed, onSelect, onHover }: any) {
-  const pos = pointOnRoute(shipment.from, shipment.to, shipment.progress);
+  const pos = pointOnRoute(shipment.from, shipment.to, shipment.progress ?? 0.5);
   const s = STATUS[shipment.status] || STATUS["healthy"];
   const isCritical = shipment.status === "critical";
   const emphasized = selected || hovered;
@@ -432,10 +407,10 @@ function ShipmentMarker({ shipment, selected, hovered, dimmed, onSelect, onHover
 }
 
 /* ------------------------------------------------------------------ */
-/*  MAP CONTROLS                                                        */
+/*  MAP & OVERLAYS                                                    */
 /* ------------------------------------------------------------------ */
 
-function MapControls({ setZoom, onRecenter, onFitAll, view, setView, live, setLive }: any) {
+function MapControls({ setZoom, onRecenter, live, setLive }: any) {
   const btn =
     "flex h-8 w-8 items-center justify-center rounded-lg text-stone-500 hover:text-emerald-700 hover:bg-emerald-50 transition-all duration-200 active:scale-90";
   return (
@@ -471,10 +446,12 @@ function SelectedShipmentPanel({ shipment, onClose }: any) {
   if (!shipment) return null;
   const s = STATUS[shipment.status] || STATUS["healthy"];
   const isCritical = shipment.status === "critical";
+  const temp = (shipment.temp ?? 0).toFixed(1);
+  const humidity = (shipment.humidity ?? 0).toFixed(0);
 
   return (
     <div className="absolute right-4 top-20 z-20 w-[300px] rounded-[1.75rem] border bg-white/97 backdrop-blur-md p-5 border-stone-200 shadow-xl">
-      <button onClick={onClose} className="absolute right-4 top-4 text-stone-400">
+      <button onClick={onClose} className="absolute right-4 top-4 text-stone-400 hover:text-stone-600">
         <X size={16} />
       </button>
       <div className="text-[10px] font-semibold tracking-wide text-stone-400 uppercase">
@@ -484,27 +461,23 @@ function SelectedShipmentPanel({ shipment, onClose }: any) {
       <div className="text-[13px] text-stone-500">{shipment.from} → {shipment.to}</div>
 
       <div className="mt-4 flex items-center gap-4 rounded-2xl bg-stone-50 p-3.5 border border-stone-100">
-        <HealthRing value={shipment.health || 85} hex={s.hex} />
+        <HealthRing value={shipment.health ?? 90} hex={s.hex} />
         <div className="flex-1 grid grid-cols-2 gap-2 text-[12px]">
           <div>
             <div className="text-stone-400 text-[10px]">Temp</div>
             <div className={`font-bold ${isCritical ? "text-red-600" : "text-emerald-950"}`}>
-              {shipment.temp.toFixed(1)}°C
+              {temp}°C
             </div>
           </div>
           <div>
             <div className="text-stone-400 text-[10px]">Humidity</div>
-            <div className="font-bold text-emerald-950">{shipment.humidity}%</div>
+            <div className="font-bold text-emerald-950">{humidity}%</div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
-/* ------------------------------------------------------------------ */
-/*  TRACKING MAP                                                        */
-/* ------------------------------------------------------------------ */
 
 function TrackingMap({ shipments, selectedId, onSelect, hoveredId, onHover, live, setLive }: any) {
   const [zoom, setZoom] = useState(1);
@@ -519,9 +492,18 @@ function TrackingMap({ shipments, selectedId, onSelect, hoveredId, onHover, live
           style={{ transform: `scale(${zoom})`, transition: "transform 0.4s ease" }}
         >
           <rect x="0" y="0" width="600" height="500" fill="#faf9f5" />
-          {ROUTES.map((r) => (
-            <path key={r.id} d={curvePath(r.from, r.to)} fill="none" stroke="#bcd6c2" strokeWidth="1.6" />
+          
+          {/* Dynamically draw paths for active shipment routes */}
+          {shipments.map((sh: any) => (
+            <path
+              key={`route-${sh.id}`}
+              d={curvePath(sh.from, sh.to)}
+              fill="none"
+              stroke="#bcd6c2"
+              strokeWidth="1.6"
+            />
           ))}
+
           {shipments.map((sh: any) => (
             <ShipmentMarker
               key={sh.id}
@@ -540,10 +522,6 @@ function TrackingMap({ shipments, selectedId, onSelect, hoveredId, onHover, live
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  LIVE ACTIVITY FEED                                                 */
-/* ------------------------------------------------------------------ */
-
 function LiveActivity({ events }: { events: any[] }) {
   return (
     <div className="rounded-[1.75rem] border border-stone-200 bg-white shadow-sm overflow-hidden p-5">
@@ -554,53 +532,68 @@ function LiveActivity({ events }: { events: any[] }) {
         <span className="text-[10.5px] font-bold text-emerald-600">WEBSOCKET ONLINE</span>
       </div>
       <div className="space-y-3 max-h-[220px] overflow-y-auto">
-        {events.map((e, idx) => (
-          <div key={idx} className="flex items-center justify-between text-[12px] border-b border-stone-50 pb-2">
-            <div>
-              <span className="font-semibold text-emerald-950">{e.shipmentId}</span>: {e.text}
+        {events.length === 0 ? (
+          <div className="text-xs text-stone-400 py-2">Listening for incoming telemetry pings...</div>
+        ) : (
+          events.map((e, idx) => (
+            <div key={idx} className="flex items-center justify-between text-[12px] border-b border-stone-50 pb-2">
+              <div>
+                <span className="font-semibold text-emerald-950">{e.shipmentId}</span>: {e.text}
+              </div>
+              <span className="text-[10px] text-stone-400">{formatAgo(Date.now() - e.at)}</span>
             </div>
-            <span className="text-[10px] text-stone-400">{formatAgo(Date.now() - e.at)}</span>
-          </div>
-        ))}
+          ))
+        )}
       </div>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  MAIN PAGE CONTAINER                                                */
+/*  MAIN PAGE CONTAINER                                               */
 /* ------------------------------------------------------------------ */
 
 export default function LiveTrackingPage() {
   const [liveShipments, setLiveShipments] = useState<any[]>(INITIAL_SHIPMENTS);
   const [liveEvents, setLiveEvents] = useState<any[]>([]);
   const [live, setLive] = useState(true);
-  const [selectedId, setSelectedId] = useState("CG-10490");
+  const [selectedId, setSelectedId] = useState<string | null>("CG-10490");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
   // 1. Fetch initial shipment list from Express REST API
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/api/v1/shipments`)
-      .then((res) => res.json())
-      .then((resData) => {
-        if (resData.success && resData.data.length > 0) {
-          const mapped = resData.data.map((sh: any) => ({
-            id: sh.shipmentId,
-            product: sh.cargoType || "Perishables",
-            from: sh.origin || "Mumbai",
-            to: sh.destination || "Pune",
-            status: sh.status === "CRITICAL" ? "critical" : sh.status === "WARNING" ? "warning" : "healthy",
-            temp: sh.currentTemp ?? 5.0,
-            humidity: sh.currentHumidity ?? 70,
-            health: sh.healthIndex ?? 90,
-            risk: sh.aiRiskLevel || "LOW",
-            eta: "2h 10m",
-            progress: 0.45,
-          }));
-          setLiveShipments(mapped);
+  const fetchShipments = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/shipments`);
+      const resData = await res.json();
+      const rawData = resData.data || resData;
+
+      if (Array.isArray(rawData) && rawData.length > 0) {
+        const mapped = rawData.map((sh: any) => ({
+          id: sh.shipmentId || sh.id,
+          product: sh.cargoType || "Perishables",
+          from: sh.origin || "Mumbai",
+          to: sh.destination || "Pune",
+          status: normalizeStatus(sh.status),
+          temp: Number(sh.currentTemp ?? sh.temperature ?? 0),
+          humidity: Number(sh.currentHumidity ?? sh.humidity ?? 0),
+          health: Number(sh.healthIndex ?? sh.health ?? 90),
+          risk: (sh.aiRiskLevel || sh.aiRisk || "LOW").toUpperCase(),
+          eta: typeof sh.eta === "string" ? sh.eta : "2h 10m",
+          progress: (sh.routeProgress ?? 50) / 100,
+        }));
+
+        setLiveShipments(mapped);
+        if (!selectedId && mapped.length > 0) {
+          setSelectedId(mapped[0].id);
         }
-      })
-      .catch((err) => console.error("Error fetching shipments:", err));
+      }
+    } catch (err) {
+      console.error("Error fetching shipments for live tracking:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchShipments();
   }, []);
 
   // 2. Connect Socket.io for live telemetry pings
@@ -617,11 +610,11 @@ export default function LiveTrackingPage() {
           if (sh.id === shipmentId) {
             return {
               ...sh,
-              temp: temperature,
-              humidity: humidity ?? sh.humidity,
-              health: healthIndex ?? sh.health,
-              status: status === "CRITICAL" ? "critical" : status === "WARNING" ? "warning" : "healthy",
-              risk: aiRiskLevel || sh.risk,
+              temp: Number(temperature ?? sh.temp),
+              humidity: Number(humidity ?? sh.humidity),
+              health: Number(healthIndex ?? sh.health),
+              status: normalizeStatus(status || sh.status),
+              risk: (aiRiskLevel || sh.risk || "LOW").toUpperCase(),
             };
           }
           return sh;
@@ -631,8 +624,8 @@ export default function LiveTrackingPage() {
       setLiveEvents((prev) => [
         {
           shipmentId,
-          text: `Temp ${temperature}°C · Health ${healthIndex ?? 90}%`,
-          status: status === "CRITICAL" ? "critical" : "healthy",
+          text: `Temp ${Number(temperature ?? 0).toFixed(1)}°C · Health ${healthIndex ?? 90}%`,
+          status: normalizeStatus(status),
           at: Date.now(),
         },
         ...prev.slice(0, 9),
@@ -668,19 +661,19 @@ export default function LiveTrackingPage() {
 
           <div className="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm">
             <div className="text-sm font-semibold text-emerald-950 mb-3">Active Shipments</div>
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[620px] overflow-y-auto">
               {liveShipments.map((sh) => (
                 <div
                   key={sh.id}
                   onClick={() => setSelectedId(sh.id)}
-                  className={`p-3 rounded-xl border cursor-pointer ${
-                    sh.id === selectedId ? "border-emerald-500 bg-emerald-50/50" : "border-stone-100"
+                  className={`p-3 rounded-xl border cursor-pointer transition-all duration-150 ${
+                    sh.id === selectedId ? "border-emerald-500 bg-emerald-50/50 shadow-sm" : "border-stone-100 hover:border-stone-200"
                   }`}
                 >
                   <div className="flex justify-between font-bold text-[13px]">
                     <span>{sh.id}</span>
                     <span className={sh.status === "critical" ? "text-red-600" : "text-emerald-700"}>
-                      {sh.temp.toFixed(1)}°C
+                      {(sh.temp ?? 0).toFixed(1)}°C
                     </span>
                   </div>
                   <div className="text-[11px] text-stone-400">{sh.from} → {sh.to}</div>

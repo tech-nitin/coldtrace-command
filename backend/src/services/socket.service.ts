@@ -20,7 +20,7 @@ class SocketService {
 
   public emitTelemetryUpdate(shipmentId: string, payload: object): void {
     if (this.io) {
-      this.io.emit('telemetry:update', { shipmentId, ...payload });
+      this.io.emit('telemetry_update', { shipmentId, ...payload });
       this.io.emit(`shipment:${shipmentId}`, payload);
     }
   }

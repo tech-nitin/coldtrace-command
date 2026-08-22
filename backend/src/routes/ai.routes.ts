@@ -1,10 +1,15 @@
 import { Router } from 'express';
 import Shipment from '../models/Shipment.js';
-import Telemetry from '../models/Telemetry.js';
+import { Telemetry } from '../models/Telemetry.js';
 import { analyzeShipmentRisk } from '../services/ai.service.js';
+import { getAIInsightsData } from '../controllers/ai.controller.js';
 
 const router = Router();
 
+// GET /api/v1/ai-insights (Powers AIInsightsPage.tsx)
+router.get('/', getAIInsightsData);
+
+// GET /api/v1/ai-insights/analyze/:shipmentId (Single shipment analysis)
 router.get('/analyze/:shipmentId', async (req, res) => {
   try {
     const { shipmentId } = req.params;

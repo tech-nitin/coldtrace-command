@@ -1,16 +1,17 @@
 import { Request, Response } from 'express';
-import {Telemetry} from '../models/Telemetry.js';
+import { Telemetry } from '../models/Telemetry.js';
 import Shipment from '../models/Shipment.js';
 import { calculateCargoHealth } from '../utils/healthCalculator.js';
 import { socketService } from '../services/socket.service.js';
 
-export const ingestTelemetry = async (req: Request, res: Response) => {
+export const ingestTelemetry = async (req: Request, res: Response): Promise<void> => {
   try {
     const { deviceId, temperature, humidity, latitude, longitude } = req.body;
 
     const shipment = await Shipment.findOne({ sensorDeviceId: deviceId });
     if (!shipment) {
-      return res.status(404).json({ success: false, message: 'Device not registered to shipment' });
+      res.status(404).json({ success: false, message: 'Device not registered to shipment' });
+      return;
     }
 
     const { healthIndex, status, aiRiskLevel } = calculateCargoHealth(
@@ -20,6 +21,7 @@ export const ingestTelemetry = async (req: Request, res: Response) => {
     );
 
     const telemetry = await Telemetry.create({
+      deviceId, // Pass deviceId to satisfy schema validation
       shipmentId: shipment.shipmentId,
       timestamp: new Date(),
       temperature,

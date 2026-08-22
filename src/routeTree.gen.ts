@@ -14,7 +14,6 @@ import { Route as AiInsightsRouteImport } from './routes/ai-insights'
 import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as DevicesRouteImport } from './routes/devices'
-import { Route as LiveTrackingRouteImport } from './routes/live-tracking'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ShipmentsRouteImport } from './routes/shipments'
 
@@ -43,11 +42,6 @@ const DevicesRoute = DevicesRouteImport.update({
   path: '/devices',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LiveTrackingRoute = LiveTrackingRouteImport.update({
-  id: '/live-tracking',
-  path: '/live-tracking',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -65,7 +59,6 @@ export interface FileRoutesByFullPath {
   '/alerts': typeof AlertsRoute
   '/analytics': typeof AnalyticsRoute
   '/devices': typeof DevicesRoute
-  '/live-tracking': typeof LiveTrackingRoute
   '/profile': typeof ProfileRoute
   '/shipments': typeof ShipmentsRoute
 }
@@ -75,7 +68,6 @@ export interface FileRoutesByTo {
   '/alerts': typeof AlertsRoute
   '/analytics': typeof AnalyticsRoute
   '/devices': typeof DevicesRoute
-  '/live-tracking': typeof LiveTrackingRoute
   '/profile': typeof ProfileRoute
   '/shipments': typeof ShipmentsRoute
 }
@@ -86,7 +78,6 @@ export interface FileRoutesById {
   '/alerts': typeof AlertsRoute
   '/analytics': typeof AnalyticsRoute
   '/devices': typeof DevicesRoute
-  '/live-tracking': typeof LiveTrackingRoute
   '/profile': typeof ProfileRoute
   '/shipments': typeof ShipmentsRoute
 }
@@ -98,7 +89,6 @@ export interface FileRouteTypes {
     | '/alerts'
     | '/analytics'
     | '/devices'
-    | '/live-tracking'
     | '/profile'
     | '/shipments'
   fileRoutesByTo: FileRoutesByTo
@@ -108,7 +98,6 @@ export interface FileRouteTypes {
     | '/alerts'
     | '/analytics'
     | '/devices'
-    | '/live-tracking'
     | '/profile'
     | '/shipments'
   id:
@@ -118,7 +107,6 @@ export interface FileRouteTypes {
     | '/alerts'
     | '/analytics'
     | '/devices'
-    | '/live-tracking'
     | '/profile'
     | '/shipments'
   fileRoutesById: FileRoutesById
@@ -129,7 +117,6 @@ export interface RootRouteChildren {
   AlertsRoute: typeof AlertsRoute
   AnalyticsRoute: typeof AnalyticsRoute
   DevicesRoute: typeof DevicesRoute
-  LiveTrackingRoute: typeof LiveTrackingRoute
   ProfileRoute: typeof ProfileRoute
   ShipmentsRoute: typeof ShipmentsRoute
 }
@@ -171,13 +158,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevicesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/live-tracking': {
-      id: '/live-tracking'
-      path: '/live-tracking'
-      fullPath: '/live-tracking'
-      preLoaderRoute: typeof LiveTrackingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -201,7 +181,6 @@ const rootRouteChildren: RootRouteChildren = {
   AlertsRoute: AlertsRoute,
   AnalyticsRoute: AnalyticsRoute,
   DevicesRoute: DevicesRoute,
-  LiveTrackingRoute: LiveTrackingRoute,
   ProfileRoute: ProfileRoute,
   ShipmentsRoute: ShipmentsRoute,
 }
