@@ -1,148 +1,75 @@
-import { motion } from "framer-motion";
-import { Clock, MapPin, WifiOff } from "lucide-react";
-import { Shipment, ViewMode } from "../../types/shipment";
-import { healthTone, riskConfig, statusConfig } from "./statusStyles";
+import { Shipment } from "../../types/shipment";
 
 interface ShipmentRowProps {
   shipment: Shipment;
-  view: ViewMode;
   isSelected: boolean;
   onSelect: (shipment: Shipment) => void;
 }
 
-function MiniProgress({ progress }: { progress: number }) {
-  return (
-    <div className="relative h-1 w-full max-w-[140px] rounded-full bg-[#EEEADC]">
-      <motion.div
-        className="absolute inset-y-0 left-0 rounded-full bg-[#1E8F55]"
-        initial={{ width: 0 }}
-        animate={{ width: `${progress}%` }}
-        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-      />
-    </div>
-  );
-}
+export function ShipmentRow({ shipment, isSelected, onSelect }: ShipmentRowProps) {
+  // Safe numerical fallbacks prevent .toFixed() runtime crashes
+  const temp = typeof shipment?.currentTemp === "number" ? shipment.currentTemp : 0;
+  const humidity = typeof shipment?.currentHumidity === "number" ? shipment.currentHumidity : 0;
+  const health = shipment?.health ?? 100;
 
-export function ShipmentRow({ shipment, view, isSelected, onSelect }: ShipmentRowProps) {
-  const status = statusConfig[shipment.status];
-  const risk = riskConfig[shipment.aiRisk];
-  const isCritical = shipment.status === "critical";
-  const tempColor =
-    shipment.temperatureState === "critical"
-      ? "text-[#C0473C]"
-      : shipment.temperatureState === "warn"
-      ? "text-[#C1852B]"
-      : "text-[#1B4B33]";
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "critical":
+        return "bg-rose-50 text-rose-700 border-rose-200";
+      case "at-risk":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      default:
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    }
+  };
 
   return (
-    <motion.button
-      layout
+    <div
       onClick={() => onSelect(shipment)}
-      whileHover={{ y: -1 }}
-      whileTap={{ scale: 0.995 }}
-      transition={{ layout: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } }}
-      className={`group relative flex w-full text-left transition-colors ${
-        view === "grid" ? "flex-col gap-3" : "flex-col gap-3 sm:flex-row sm:items-center sm:gap-5"
-      } rounded-xl border px-4 py-3.5 ${
+      className={`group relative flex cursor-pointer items-center justify-between rounded-2xl border p-4 transition-all duration-200 ${
         isSelected
-          ? "border-[#1E8F55] bg-[#F3FAF5]"
-          : isCritical
-          ? "border-[#F0C9C2] bg-white hover:border-[#E7B8B0]"
-          : "border-transparent bg-white hover:border-[#E7E3D4] hover:bg-[#FBFAF4]"
+          ? "border-emerald-600 bg-emerald-50/20 shadow-sm"
+          : "border-stone-200/80 bg-white hover:border-stone-300 hover:bg-stone-50/50"
       }`}
     >
-      {isSelected && (
-        <motion.span
-          layoutId="row-selected-accent"
-          className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-[#1E8F55]"
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        />
-      )}
-      {isCritical && !isSelected && (
-        <span className="absolute inset-y-2 left-0 w-[3px] rounded-full bg-[#C0473C]" />
-      )}
-
-      {/* ID + route */}
-      <div className={view === "grid" ? "" : "sm:w-64 sm:shrink-0"}>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-[#14231B]">{shipment.id}</span>
-          {shipment.sensorOnline ? (
-            <span className="relative flex h-1.5 w-1.5" title="Sensor connected">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#1E8F55] opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#1E8F55]" />
+      <div className="flex items-center gap-4 min-w-0">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-semibold text-stone-900">
+              {shipment.id}
             </span>
-          ) : (
-            <span title="Sensor offline" className="flex">
-              <WifiOff className="h-3 w-3 text-[#C9D2CB]" />
-            </span>
-          )}
-          <span className="text-xs text-[#98A093]">· {shipment.cargoType}</span>
-        </div>
-        <div className="mt-1 flex items-center gap-1.5 text-xs text-[#6B7568]">
-          <MapPin className="h-3 w-3 text-[#98A093]" />
-          {shipment.origin}
-          <span className="text-[#C9D2CB]">→</span>
-          {shipment.destination}
-        </div>
-        <div className="mt-2 flex items-center gap-2">
-          <MiniProgress progress={shipment.progress} />
-          <span className="text-[11px] font-medium text-[#98A093]">{shipment.progress}%</span>
+            <span className="text-xs text-stone-400">• {shipment.cargoType}</span>
+          </div>
+          <div className="mt-1 flex items-center gap-1.5 text-xs text-stone-500">
+            <span>{shipment.origin}</span>
+            <span>→</span>
+            <span>{shipment.destination}</span>
+          </div>
         </div>
       </div>
 
-      {/* Metrics */}
-      <div
-        className={`flex items-center gap-4 text-xs ${
-          view === "grid" ? "justify-between" : "sm:w-56 sm:shrink-0"
-        }`}
-      >
-        <span className={`font-semibold tabular-nums ${tempColor}`}>
-          {shipment.temperature.toFixed(1)}°C
-        </span>
-        <span className="font-semibold tabular-nums text-[#1B4B33]">{shipment.humidity}% RH</span>
+      <div className="flex items-center gap-6">
+        <div className="text-right">
+          <div className="flex items-center justify-end gap-3 font-mono text-xs font-medium">
+            <span className={temp > 25 ? "text-rose-600 font-semibold" : "text-stone-700"}>
+              {temp.toFixed(1)}°C
+            </span>
+            <span className="text-stone-500">{humidity.toFixed(0)}% RH</span>
+            <span className="text-emerald-700 font-medium">Health {health}</span>
+          </div>
+          <div className="mt-1 text-[11px] text-stone-400">
+            ETA {shipment.eta || "N/A"}
+          </div>
+        </div>
+
         <span
-          className="font-semibold tabular-nums"
-          style={{ color: healthTone(shipment.health) }}
+          className={`rounded-full border px-2.5 py-0.5 text-[11px] font-medium capitalize ${getStatusBadge(
+            shipment.status
+          )}`}
         >
-          Health {shipment.health}
+          {shipment.status}
         </span>
       </div>
-
-      {/* ETA + status */}
-      <div
-        className={`flex items-center gap-2 text-[11px] text-[#98A093] ${
-          view === "grid" ? "justify-between" : "sm:w-40 sm:shrink-0"
-        }`}
-      >
-        <span className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          {shipment.eta}
-        </span>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${status.bg} ${status.text}`}>
-          {status.label}
-        </span>
-      </div>
-
-      {/* AI risk */}
-      <div
-        className={`flex items-center gap-1.5 text-xs font-semibold ${risk.text} ${
-          view === "grid" ? "justify-between border-t border-[#EEEADC] pt-2.5" : "sm:w-28 sm:shrink-0 sm:justify-end"
-        }`}
-      >
-        {view === "grid" && (
-          <span className="text-[10px] font-medium uppercase tracking-wide text-[#98A093]">
-            AI Risk
-          </span>
-        )}
-        <span className="flex items-center gap-1.5">
-          <span
-            className={`h-1.5 w-1.5 rounded-full ${risk.dot} ${
-              shipment.aiRisk === "high" ? "animate-pulse" : ""
-            }`}
-          />
-          {risk.label.toUpperCase()}
-        </span>
-      </div>
-    </motion.button>
+    </div>
   );
 }

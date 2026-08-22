@@ -53,7 +53,7 @@ function seededRandom(seed: number) {
 }
 
 function buildTempSeries(range: string) {
-  const meta = RANGE_META[range];
+  const meta = RANGE_META[range] || RANGE_META["24H"];
   const rnd = seededRandom(range.charCodeAt(0) * 17 + range.length);
   const base = 4.0;
   const safeLow = 2.0, safeHigh = 8.0, critical = 10.0;
@@ -93,25 +93,6 @@ function buildTempSeries(range: string) {
   };
 }
 
-const KPI_BASE = {
-  "24H": [
-    { key: "health", label: "Average Shipment Health", value: 86, suffix: "/100", delta: 4.2, dir: "up", tone: "good", spark: [78,80,79,82,84,83,85,86] },
-    { key: "excursions", label: "Temperature Excursions", value: 12, suffix: "", delta: 18.0, dir: "up", tone: "bad", spark: [6,7,7,9,10,9,11,12] },
-    { key: "onTime", label: "On-Time Delivery", value: 94.6, suffix: "%", delta: 1.1, dir: "up", tone: "good", spark: [91,92,92,93,93,94,94.2,94.6] },
-    { key: "atRisk", label: "At-Risk Shipments", value: 3, suffix: "", delta: 1, dir: "up", tone: "warn", spark: [1,1,2,2,2,3,3,3] },
-    { key: "savings", label: "Losses Prevented", value: 2.4, prefix: "₹", suffix: "L", delta: 12.8, dir: "up", tone: "good", spark: [1.4,1.6,1.7,1.9,2.0,2.1,2.3,2.4] },
-  ],
-};
-
-function scaleKpis(range: string) {
-  const mult = { "24H": 1, "7D": 1.6, "30D": 3.1, "90D": 5.4 }[range] || 1;
-  return KPI_BASE["24H"].map((k) => {
-    if (k.key === "onTime" || k.key === "health") return { ...k };
-    const scaled = k.key === "savings" ? Math.round(k.value * mult * 10) / 10 : Math.round(k.value * mult);
-    return { ...k, value: scaled };
-  });
-}
-
 const PERIOD_COPY: Record<string, string> = {
   "24H": "vs previous 24 hours",
   "7D": "vs previous 7 days",
@@ -122,7 +103,7 @@ const PERIOD_COPY: Record<string, string> = {
 const TOTAL_SHIPMENTS: Record<string, number> = { "24H": 24, "7D": 38, "30D": 74, "90D": 130 };
 
 function buildRiskTrend(range: string) {
-  const meta = RANGE_META[range];
+  const meta = RANGE_META[range] || RANGE_META["24H"];
   const rnd = seededRandom(range.length * 31 + 7);
   let low = 74, medium = 16, high = 7, critical = 3;
   const data = [];
@@ -158,13 +139,6 @@ function buildRiskDistribution(range: string) {
   return segments.map((s) => ({ ...s, count: Math.max(1, Math.round((s.pct / 100) * total)) }));
 }
 
-const ROUTES = [
-  { id: "idr-bpl", from: "Indore", to: "Bhopal", health: 92, onTime: 97, shipments: 12, excursions: 1, avgTemp: 4.6 },
-  { id: "jai-idr", from: "Jaipur", to: "Indore", health: 81, onTime: 91, shipments: 8, excursions: 2, avgTemp: 5.4 },
-  { id: "idr-del", from: "Indore", to: "Delhi", health: 75, onTime: 88, shipments: 14, excursions: 3, avgTemp: 6.1 },
-  { id: "bpl-jai", from: "Bhopal", to: "Jaipur", health: 70, onTime: 89, shipments: 7, excursions: 3, avgTemp: 6.4 },
-  { id: "mum-pun", from: "Mumbai", to: "Pune", health: 68, onTime: 86, shipments: 9, excursions: 4, avgTemp: 6.9 },
-];
 function routeTone(health: number) {
   if (health >= 88) return "good";
   if (health >= 74) return "warn";
@@ -178,6 +152,13 @@ const SENSORS = [
   { id: "accel", name: "Accelerometer", model: "MPU6050", icon: "accel", uptime: 88.1, quality: 84.2, issues: 4, lastComm: "6 min ago", online: false },
 ];
 const sensorIcon: Record<string, any> = { temp: Thermometer, humidity: Droplets, gps: Satellite, accel: Activity };
+
+const IMPACT_METRICS = [
+  { value: 2.4, prefix: "₹", suffix: "L", decimals: 1, label: "Losses Prevented", note: "Estimated spoilage value averted this period" },
+  { value: 18, suffix: "", decimals: 0, label: "High-Risk Shipments Intercepted", note: "Flagged and corrected before delivery" },
+  { value: 96.4, suffix: "%", decimals: 1, label: "Cold-Chain Compliance", note: "Time spent within the safe temperature band" },
+  { value: 42, suffix: "h", decimals: 0, label: "Potential Spoilage Avoided", note: "Cumulative exposure time prevented" },
+];
 
 function CountUp({ value, decimals = 0, prefix = "", suffix = "" }: { value: number; decimals?: number; prefix?: string; suffix?: string }) {
   const ref = useRef(null);
@@ -228,8 +209,6 @@ const toneStyles: Record<string, { fg: string; bg: string; border: string }> = {
   warn: { fg: T.amber, bg: T.amberSoft, border: "#EAD3A5" },
   bad: { fg: T.red, bg: T.redSoft, border: "#E7C3BF" },
 };
-
-
 
 const heroContainer = {
   hidden: {},
@@ -336,8 +315,8 @@ function Hero({ range, setRange, shipment, setShipment, shipmentsList }: any) {
                 >
                   <option value="ALL">All Shipments</option>
                   {shipmentsList.map((s: any) => (
-                    <option key={s.shipmentId} value={s.shipmentId}>
-                      {s.shipmentId} · {s.cargoType}
+                    <option key={s.shipmentId || s.id} value={s.shipmentId || s.id}>
+                      {s.shipmentId || s.id} · {s.cargoType || "Cargo"}
                     </option>
                   ))}
                 </select>
@@ -394,7 +373,7 @@ function KpiCard({ kpi, range, index }: any) {
         >
           <Icon size={16} strokeWidth={2.1} />
         </div>
-        <Sparkline points={kpi.spark} tone={kpi.tone} />
+        <Sparkline points={kpi.spark || [1,2,3]} tone={kpi.tone} />
       </div>
 
       <div className="text-[11.5px] font-medium" style={{ color: T.inkSoft }}>
@@ -427,8 +406,7 @@ function KpiCard({ kpi, range, index }: any) {
   );
 }
 
-function KpiStrip({ range }: { range: string }) {
-  const kpis = useMemo(() => scaleKpis(range), [range]);
+function KpiStrip({ range, kpis }: { range: string; kpis: any[] }) {
   return (
     <section className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-9">
       <div className="mb-4 flex items-center justify-between">
@@ -450,61 +428,11 @@ function KpiStrip({ range }: { range: string }) {
   );
 }
 
-function ChartTooltip({ active, payload, label, range }: any) {
-  if (!active || !payload || !payload.length) return null;
-  const d = payload[0].payload;
-  const riskColor = d.risk === "High" ? T.red : d.risk === "Elevated" ? T.amber : T.emerald;
-  return (
-    <div
-      className="rounded-[14px] border px-4 py-3 shadow-lg"
-      style={{ borderColor: T.line, background: "#fff", minWidth: 190 }}
-    >
-      <div className="text-[11px] font-semibold" style={{ color: T.inkSoft }}>
-        {range === "24H" ? `Today, ${label}` : label}
-      </div>
-      <div className="mt-2 space-y-1.5 text-[12.5px]">
-        <div className="flex items-center justify-between gap-6">
-          <span style={{ color: T.inkSoft }}>Temperature</span>
-          <span className="font-semibold" style={{ color: T.ink }}>{d.temp}°C</span>
-        </div>
-        <div className="flex items-center justify-between gap-6">
-          <span style={{ color: T.inkSoft }}>Humidity</span>
-          <span className="font-semibold" style={{ color: T.ink }}>{d.humidity}%</span>
-        </div>
-        <div className="flex items-center justify-between gap-6">
-          <span style={{ color: T.inkSoft }}>Risk</span>
-          <span className="font-semibold" style={{ color: riskColor }}>{d.risk}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ActiveDot(props: any) {
-  const { cx, cy, payload } = props;
-  if (cx == null) return null;
-  const isExcursion = payload.temp > payload.critical;
-  return (
-    <circle
-      cx={cx} cy={cy} r={4.5}
-      fill={isExcursion ? T.red : T.emerald}
-      stroke="#fff" strokeWidth={2}
-    />
-  );
-}
-
 function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemetry: any }) {
   const { data, stats } = useMemo(() => buildTempSeries(range), [range]);
 
-  const currentTemp = liveTelemetry?.temperature ?? data[data.length - 1].temp;
-  const isCritical = currentTemp > 10.0;
-
-  const statCards = [
-    { label: "Average Temperature", value: `${stats.avg}°C`, note: "Within expected range", icon: Thermometer, tone: "good" },
-    { label: "Peak Temperature", value: `${stats.peak}°C`, note: "Critical excursion", icon: TrendingUp, tone: "bad" },
-    { label: "Excursions Detected", value: stats.excursions, note: "Requires attention", icon: AlertTriangle, tone: "warn" },
-    { label: "Unsafe Exposure", value: `${stats.unsafeMinutes} min`, note: "Above critical limit", icon: Droplets, tone: "bad" },
-  ];
+  const currentTemp = Number(liveTelemetry?.temperature ?? data[data.length - 1].temp).toFixed(1);
+  const isCritical = Number(currentTemp) > 10.0;
 
   return (
     <section className="mx-auto max-w-[1240px] px-4 pb-8 sm:px-6 sm:pb-9">
@@ -514,17 +442,9 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
       <h2 className="mt-1 max-w-[520px] text-[26px] font-medium leading-tight" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>
         One continuous truth about every degree.
       </h2>
-      <p className="mt-2 max-w-[560px] text-[14px] leading-relaxed" style={{ color: T.inkSoft }}>
-        Real-time thermal behaviour from the shipment's cold-chain sensor, translated into
-        drift, excursions and actionable risk.
-      </p>
 
       <div className="mt-7 grid grid-cols-1 gap-5 lg:grid-cols-[280px_1fr]">
-        <motion.div
-          key={`side-${range}`}
-          initial={{ opacity: 0, x: -12 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        <div
           className="flex flex-col rounded-[20px] border p-5"
           style={{
             borderColor: isCritical ? "#E9C9C4" : T.line,
@@ -548,32 +468,7 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
           >
             {isCritical ? "Critical" : "Healthy"}
           </span>
-
-          <div className="mt-4 rounded-[13px] border bg-white/60 p-3 text-[12px] leading-snug" style={{ borderColor: "#EAD0CC", color: T.inkSoft }}>
-            <span className="font-semibold" style={{ color: T.ink }}>
-              {isCritical ? `+${(currentTemp - 8.0).toFixed(1)}°C above safe range.` : "Operating within safe thermal limits."}
-            </span>{" "}
-            ChillChain is monitoring the shipment continuously.
-          </div>
-
-          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full" style={{ background: "#EFDAD6" }}>
-            <div className="flex h-full w-full">
-              <div className="h-full" style={{ width: "38%", background: T.emerald }} />
-              <div className="h-full" style={{ width: "27%", background: T.amber }} />
-              <div className="h-full" style={{ width: "35%", background: T.red }} />
-            </div>
-          </div>
-          <div className="mt-1.5 flex justify-between text-[9.5px] font-semibold uppercase tracking-wide" style={{ color: T.inkSoft }}>
-            <span>Safe</span><span>Warning</span><span>Critical</span>
-          </div>
-
-          <div className="mt-4 space-y-2.5 border-t pt-4 text-[12.5px]" style={{ borderColor: "#EAD0CC" }}>
-            <div className="flex justify-between"><span style={{ color: T.inkSoft }}>Safe band</span><span className="font-semibold" style={{ color: T.ink }}>2.0 – 8.0°C</span></div>
-            <div className="flex justify-between"><span style={{ color: T.inkSoft }}>Critical limit</span><span className="font-semibold" style={{ color: T.ink }}>10.0°C</span></div>
-            <div className="flex justify-between"><span style={{ color: T.inkSoft }}>Excursions</span><span className="font-semibold" style={{ color: T.red }}>{stats.excursions}</span></div>
-            <div className="flex justify-between"><span style={{ color: T.inkSoft }}>Unsafe exposure</span><span className="font-semibold" style={{ color: T.red }}>{stats.unsafeMinutes} min</span></div>
-          </div>
-        </motion.div>
+        </div>
 
         <div className="rounded-[20px] border p-5" style={{ borderColor: T.line, background: T.creamSoft }}>
           <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
@@ -581,145 +476,20 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
               <LineChartIcon size={15} style={{ color: T.emerald }} />
               Temperature Trajectory
             </div>
-            <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold" style={{ background: T.mint, color: T.emerald }}>
-              <span className="h-1.5 w-1.5 rounded-full" style={{ background: T.emerald }} />
-              Sensor Live
-            </span>
-          </div>
-          <div className="mb-3 text-[12px]" style={{ color: T.inkSoft }}>
-            Live thermal behaviour over the selected period
           </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={range}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.35 }}
-              style={{ width: "100%", height: 280 }}
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={data} margin={{ top: 10, right: 12, left: -18, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="safeFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={T.emerald} stopOpacity={0.16} />
-                      <stop offset="100%" stopColor={T.emerald} stopOpacity={0.01} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid vertical={false} stroke={T.line} strokeDasharray="3 4" />
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 10.5, fill: T.inkSoft }}
-                    axisLine={{ stroke: T.line }}
-                    tickLine={false}
-                    interval={range === "30D" ? 3 : range === "24H" ? 2 : 0}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 10.5, fill: T.inkSoft }}
-                    axisLine={false}
-                    tickLine={false}
-                    domain={[0, 14]}
-                    tickFormatter={(v) => `${v}°`}
-                    width={34}
-                  />
-                  <ReferenceLine y={10} stroke={T.red} strokeDasharray="5 4" strokeWidth={1.4}
-                    label={{ value: "Critical · 10°C", position: "insideTopRight", fontSize: 10, fill: T.red, fontWeight: 600 }} />
-                  <ReferenceLine y={8} stroke={T.emerald} strokeOpacity={0.35} strokeWidth={1} />
-                  <ReferenceLine y={2} stroke={T.emerald} strokeOpacity={0.35} strokeWidth={1} />
-                  <Tooltip content={<ChartTooltip range={range} />} />
-                  <Area
-                    type="monotone"
-                    dataKey="safeHigh"
-                    stroke="none"
-                    fill="url(#safeFill)"
-                    isAnimationActive={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="temp"
-                    stroke={T.emerald}
-                    strokeWidth={2.5}
-                    dot={false}
-                    activeDot={<ActiveDot />}
-                    animationDuration={900}
-                    animationEasing="ease-out"
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </motion.div>
-          </AnimatePresence>
-
-          <div className="mt-2 flex flex-wrap items-center gap-4 text-[11.5px]" style={{ color: T.inkSoft }}>
-            <span className="flex items-center gap-1.5"><span className="h-[2px] w-4" style={{ background: T.emerald }} /> Temperature</span>
-            <span className="flex items-center gap-1.5"><span className="h-2.5 w-4 rounded-sm" style={{ background: T.mint }} /> Safe band</span>
-            <span className="flex items-center gap-1.5"><span className="h-[2px] w-4 border-t-2 border-dashed" style={{ borderColor: T.red }} /> Critical</span>
+          <div style={{ width: "100%", height: 280 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={data} margin={{ top: 10, right: 12, left: -18, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke={T.line} strokeDasharray="3 4" />
+                <XAxis dataKey="label" tick={{ fontSize: 10.5, fill: T.inkSoft }} axisLine={{ stroke: T.line }} />
+                <YAxis tick={{ fontSize: 10.5, fill: T.inkSoft }} domain={[0, 14]} tickFormatter={(v) => `${v}°`} width={34} />
+                <Line type="monotone" dataKey="temp" stroke={T.emerald} strokeWidth={2.5} dot={false} />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
-
-      <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {statCards.map((s, i) => {
-          const st = toneStyles[s.tone];
-          const Icon = s.icon;
-          return (
-            <motion.div
-              key={s.label}
-              initial={{ opacity: 0, y: 12 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-10% 0px" }}
-              transition={{ duration: 0.45, delay: i * 0.05 }}
-              className="rounded-[16px] border p-4"
-              style={{ borderColor: T.line, background: T.creamSoft }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex h-8 w-8 items-center justify-center rounded-[10px]" style={{ background: st.bg, color: st.fg }}>
-                  <Icon size={14} />
-                </div>
-                {s.tone !== "good" && <span className="h-1.5 w-1.5 rounded-full" style={{ background: st.fg }} />}
-              </div>
-              <div className="mt-3 text-[10.5px] font-semibold uppercase tracking-wide" style={{ color: T.inkSoft }}>
-                {s.label}
-              </div>
-              <div className="mt-1 text-[21px] font-medium" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>
-                {s.value}
-              </div>
-              <div className="mt-0.5 text-[11.5px]" style={{ color: T.inkSoft }}>{s.note}</div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-10% 0px" }}
-        transition={{ duration: 0.5 }}
-        className="mt-4 flex flex-col justify-between gap-4 rounded-[18px] p-5 sm:flex-row sm:items-center sm:p-6"
-        style={{ background: T.forest }}
-      >
-        <div className="flex items-start gap-3.5">
-          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px]" style={{ background: "rgba(255,255,255,0.12)" }}>
-            <Sparkles size={16} color="#fff" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-semibold text-white">Temperature is trending upward</span>
-              <span className="rounded-full px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide" style={{ background: T.red, color: "#fff" }}>
-                High Risk
-              </span>
-            </div>
-            <p className="mt-1 max-w-[560px] text-[12.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.72)" }}>
-              ChillChain detected {stats.excursions} temperature excursions in the selected window. The
-              latest reading is {currentTemp}°C, {(currentTemp - 8).toFixed(1)}°C
-              above the safe operating range. Continued exposure may increase spoilage risk.
-            </p>
-          </div>
-        </div>
-        <button className="flex shrink-0 items-center gap-1.5 self-start rounded-full bg-white px-4 py-2 text-[12.5px] font-semibold sm:self-center" style={{ color: T.forest }}>
-          View AI Analysis →
-        </button>
-      </motion.div>
     </section>
   );
 }
@@ -731,205 +501,50 @@ const RISK_SERIES = [
   { key: "Critical", color: T.red, fill: "url(#riskCritical)" },
 ];
 
-function RiskTrendTooltip({ active, payload, label }: any) {
-  if (!active || !payload || !payload.length) return null;
-  return (
-    <div className="rounded-[14px] border px-4 py-3 shadow-lg" style={{ borderColor: T.line, background: "#fff", minWidth: 168 }}>
-      <div className="text-[11px] font-semibold" style={{ color: T.inkSoft }}>{label}</div>
-      <div className="mt-2 space-y-1.5 text-[12px]">
-        {RISK_SERIES.map((s) => {
-          const v = payload.find((p: any) => p.dataKey === s.key)?.value;
-          if (v == null) return null;
-          return (
-            <div key={s.key} className="flex items-center justify-between gap-6">
-              <span className="flex items-center gap-1.5" style={{ color: T.inkSoft }}>
-                <span className="h-2 w-2 rounded-full" style={{ background: s.color }} /> {s.key}
-              </span>
-              <span className="font-semibold" style={{ color: T.ink }}>{v}%</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function RiskTrendChart({ range }: { range: string }) {
   const data = useMemo(() => buildRiskTrend(range), [range]);
   return (
     <div className="rounded-[20px] border p-5" style={{ borderColor: T.line, background: T.creamSoft }}>
       <div className="mb-1 flex items-center justify-between">
         <div className="flex items-center gap-2 text-[14.5px] font-semibold" style={{ color: T.ink }}>
-          <Gauge size={15} style={{ color: T.emerald }} />
-          Risk Trend
+          <Gauge size={15} style={{ color: T.emerald }} /> Risk Trend
         </div>
       </div>
       <div className="mb-3 text-[12px]" style={{ color: T.inkSoft }}>
         Share of shipments by risk tier over the selected period
       </div>
-
-      <div className="mb-3 flex flex-wrap gap-4 text-[11.5px]" style={{ color: T.inkSoft }}>
-        {RISK_SERIES.map((s) => (
-          <span key={s.key} className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full" style={{ background: s.color }} /> {s.key}
-          </span>
-        ))}
+      <div style={{ width: "100%", height: 240 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke={T.line} strokeDasharray="3 4" />
+            <XAxis dataKey="label" tick={{ fontSize: 10.5, fill: T.inkSoft }} />
+            <YAxis tick={{ fontSize: 10.5, fill: T.inkSoft }} tickFormatter={(v) => `${v}%`} width={36} domain={[0, 100]} />
+            {RISK_SERIES.map((s) => (
+              <Area key={s.key} type="monotone" dataKey={s.key} stackId="risk" stroke={s.color} fill={s.color} fillOpacity={0.15} />
+            ))}
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={range}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.35 }}
-          style={{ width: "100%", height: 240 }}
-        >
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 6, right: 8, left: -18, bottom: 0 }}>
-              <defs>
-                <linearGradient id="riskLow" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={T.emerald} stopOpacity={0.55} />
-                  <stop offset="100%" stopColor={T.emerald} stopOpacity={0.08} />
-                </linearGradient>
-                <linearGradient id="riskMedium" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={T.amber} stopOpacity={0.5} />
-                  <stop offset="100%" stopColor={T.amber} stopOpacity={0.08} />
-                </linearGradient>
-                <linearGradient id="riskHigh" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#B85C2E" stopOpacity={0.5} />
-                  <stop offset="100%" stopColor="#B85C2E" stopOpacity={0.08} />
-                </linearGradient>
-                <linearGradient id="riskCritical" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={T.red} stopOpacity={0.6} />
-                  <stop offset="100%" stopColor={T.red} stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} stroke={T.line} strokeDasharray="3 4" />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 10.5, fill: T.inkSoft }}
-                axisLine={{ stroke: T.line }}
-                tickLine={false}
-                interval={range === "30D" ? 3 : range === "24H" ? 2 : 0}
-              />
-              <YAxis
-                tick={{ fontSize: 10.5, fill: T.inkSoft }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `${v}%`}
-                width={36}
-                domain={[0, 100]}
-              />
-              <Tooltip content={<RiskTrendTooltip />} />
-              {RISK_SERIES.map((s) => (
-                <Area
-                  key={s.key}
-                  type="monotone"
-                  dataKey={s.key}
-                  stackId="risk"
-                  stroke={s.color}
-                  strokeWidth={1.4}
-                  fill={s.fill}
-                  animationDuration={850}
-                  animationEasing="ease-out"
-                />
-              ))}
-            </AreaChart>
-          </ResponsiveContainer>
-        </motion.div>
-      </AnimatePresence>
     </div>
   );
 }
 
 function RiskDonut({ range }: { range: string }) {
   const segments = useMemo(() => buildRiskDistribution(range), [range]);
-  const [active, setActive] = useState<number | null>(null);
-  const R = 72, STROKE = 26, CX = 110, CY = 110;
-  const CIRC = 2 * Math.PI * R;
-
-  let cumulative = 0;
-  const arcs = segments.map((s) => {
-    const len = (s.pct / 100) * CIRC;
-    const offset = -cumulative;
-    cumulative += len;
-    return { ...s, len, offset };
-  });
-
-  const activeSeg = active != null ? segments[active] : null;
-
   return (
     <div className="flex flex-col rounded-[20px] border p-5" style={{ borderColor: T.line, background: T.creamSoft }}>
       <div className="mb-1 flex items-center gap-2 text-[14.5px] font-semibold" style={{ color: T.ink }}>
-        <PieChartIcon size={15} style={{ color: T.emerald }} />
-        Risk Distribution
+        <PieChartIcon size={15} style={{ color: T.emerald }} /> Risk Distribution
       </div>
-      <div className="mb-2 text-[12px]" style={{ color: T.inkSoft }}>
-        Current snapshot across {TOTAL_SHIPMENTS[range] || 24} shipments
-      </div>
-
-      <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-4 sm:flex-row">
-        <motion.svg
-          width="220" height="220" viewBox="0 0 220 220"
-          initial={{ opacity: 0, scale: 0.88, rotate: -8 }}
-          animate={{ opacity: 1, scale: 1, rotate: 0 }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        >
-          <g transform={`rotate(-90 ${CX} ${CY})`}>
-            <circle cx={CX} cy={CY} r={R} fill="none" stroke={T.line} strokeWidth={STROKE} opacity={0.4} />
-            {arcs.map((a, i) => (
-              <motion.circle
-                key={a.key}
-                cx={CX} cy={CY} r={R}
-                fill="none"
-                stroke={a.color}
-                strokeWidth={active === i ? STROKE + 6 : STROKE}
-                strokeDasharray={`${a.len} ${CIRC - a.len}`}
-                strokeDashoffset={a.offset}
-                strokeLinecap="butt"
-                animate={{
-                  opacity: active == null || active === i ? 1 : 0.35,
-                  strokeWidth: active === i ? STROKE + 6 : STROKE,
-                }}
-                transition={{ duration: 0.25, ease: "easeOut" }}
-                onMouseEnter={() => setActive(i)}
-                onMouseLeave={() => setActive(null)}
-                style={{ cursor: "pointer" }}
-              />
-            ))}
-          </g>
-          <text x={CX} y={CY - 6} textAnchor="middle" fontSize="24" fontWeight="600" fontFamily="'Fraunces', serif" fill={T.ink}>
-            {activeSeg ? `${activeSeg.pct.toFixed(0)}%` : `${segments[0].pct.toFixed(0)}%`}
-          </text>
-          <text x={CX} y={CY + 15} textAnchor="middle" fontSize="10.5" fontWeight="600" letterSpacing="0.04em" fill={T.inkSoft}>
-            {(activeSeg ? activeSeg.label : segments[0].label).toUpperCase()}
-          </text>
-        </motion.svg>
-
-        <div className="flex w-full flex-col gap-2 sm:w-auto">
-          {segments.map((s, i) => (
-            <button
-              key={s.key}
-              onMouseEnter={() => setActive(i)}
-              onMouseLeave={() => setActive(null)}
-              className="flex items-center justify-between gap-6 rounded-[12px] border px-3 py-2 text-left transition-colors"
-              style={{
-                borderColor: active === i ? s.color : "transparent",
-                background: active === i ? T.creamSoft : "transparent",
-              }}
-            >
-              <span className="flex items-center gap-2 text-[12.5px] font-medium" style={{ color: T.ink }}>
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />
-                {s.label}
-              </span>
-              <span className="flex items-baseline gap-1.5">
-                <span className="text-[13px] font-semibold" style={{ color: T.ink }}>{s.pct.toFixed(0)}%</span>
-                <span className="text-[11px]" style={{ color: T.inkSoft }}>{s.count} shp.</span>
-              </span>
-            </button>
-          ))}
-        </div>
+      <div className="mt-4 flex flex-col gap-2">
+        {segments.map((s) => (
+          <div key={s.key} className="flex justify-between items-center text-[12.5px]">
+            <span className="flex items-center gap-2" style={{ color: T.ink }}>
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} /> {s.label}
+            </span>
+            <span className="font-semibold">{s.pct.toFixed(0)}%</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -939,357 +554,97 @@ function RiskIntelligence({ range }: { range: string }) {
   return (
     <section className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-9">
       <div className="mb-4">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>
-          Risk Intelligence
-        </div>
-        <h2 className="mt-1 text-[22px] font-medium" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>
-          Where risk is building, and where it's easing
-        </h2>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>Risk Intelligence</div>
+        <h2 className="mt-1 text-[22px] font-medium" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>Where risk is building, and where it's easing</h2>
       </div>
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1.4fr_1fr]">
-        <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-10% 0px" }} transition={{ duration: 0.5 }}>
-          <RiskTrendChart range={range} />
-        </motion.div>
-        <motion.div initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: "-10% 0px" }} transition={{ duration: 0.5, delay: 0.08 }}>
-          <RiskDonut range={range} />
-        </motion.div>
+        <RiskTrendChart range={range} />
+        <RiskDonut range={range} />
       </div>
     </section>
   );
 }
 
-function RouteRow({ route, index }: any) {
-  const tone = routeTone(route.health);
-  const st = toneStyles[tone];
-  const barRef = useRef(null);
-
-  return (
-    <motion.div
-      ref={barRef}
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-10% 0px" }}
-      transition={{ duration: 0.45, delay: index * 0.07, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{ y: -2 }}
-      className="group grid grid-cols-1 gap-4 rounded-[16px] border p-4 transition-colors sm:grid-cols-[1fr_auto] sm:items-center sm:gap-6"
-      style={{ borderColor: T.line, background: T.creamSoft }}
-    >
-      <div>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-[13.5px] font-semibold" style={{ color: T.ink }}>
-            <RouteIcon size={14} style={{ color: T.emerald }} />
-            {route.from} <ChevronRight size={13} style={{ color: T.inkSoft }} /> {route.to}
-          </div>
-          <span
-            className="rounded-full px-2.5 py-0.5 text-[11px] font-bold"
-            style={{ color: st.fg, background: st.bg }}
-          >
-            Health {route.health}
-          </span>
-        </div>
-
-        <div className="mt-2.5 h-[7px] w-full overflow-hidden rounded-full" style={{ background: T.line }}>
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: st.fg }}
-            initial={{ width: "0%" }}
-            whileInView={{ width: `${route.health}%` }}
-            viewport={{ once: true, margin: "-10% 0px" }}
-            transition={{ duration: 0.8, delay: index * 0.07 + 0.1, ease: [0.16, 1, 0.3, 1] }}
-          />
-        </div>
-
-        <div className="mt-2.5 flex flex-wrap gap-x-5 gap-y-1 text-[11.5px]" style={{ color: T.inkSoft }}>
-          <span><span className="font-semibold" style={{ color: T.ink }}>{route.onTime}%</span> on-time</span>
-          <span><span className="font-semibold" style={{ color: T.ink }}>{route.shipments}</span> shipments</span>
-          <span>
-            <span className="font-semibold" style={{ color: route.excursions > 2 ? T.red : T.ink }}>{route.excursions}</span> excursion{route.excursions === 1 ? "" : "s"}
-          </span>
-          <span><span className="font-semibold" style={{ color: T.ink }}>{route.avgTemp}°C</span> avg temp</span>
-        </div>
-      </div>
-
-      <div
-        className="h-8 w-8 shrink-0 items-center justify-center rounded-full border opacity-0 transition-opacity group-hover:opacity-100 sm:flex"
-        style={{ borderColor: T.line, color: T.emerald }}
-      >
-        <ArrowUpRight size={14} />
-      </div>
-    </motion.div>
-  );
-}
-
-function RoutePerformance() {
+function RoutePerformance({ routes }: { routes: any[] }) {
   return (
     <section className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-9">
       <div className="mb-4">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>
-          Route Performance
-        </div>
-        <h2 className="mt-1 text-[22px] font-medium" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>
-          Which corridors are performing, which need attention
-        </h2>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>Route Performance</div>
+        <h2 className="mt-1 text-[22px] font-medium" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>Which corridors are performing, which need attention</h2>
       </div>
       <div className="flex flex-col gap-2.5">
-        {ROUTES.map((r, i) => (
-          <RouteRow key={r.id} route={r} index={i} />
+        {routes.map((route, i) => (
+          <div key={i} className="flex justify-between items-center rounded-[16px] border p-4" style={{ borderColor: T.line, background: T.creamSoft }}>
+            <div className="flex items-center gap-2 text-[13.5px] font-semibold" style={{ color: T.ink }}>
+              <RouteIcon size={14} style={{ color: T.emerald }} />
+              {route.from} <ChevronRight size={13} style={{ color: T.inkSoft }} /> {route.to}
+            </div>
+            <span className="font-semibold" style={{ color: route.health < 75 ? T.red : T.emerald }}>Health {route.health}</span>
+          </div>
         ))}
       </div>
     </section>
   );
 }
 
-function ProgressBar({ value, color, delay }: any) {
-  return (
-    <div className="h-[6px] w-full overflow-hidden rounded-full" style={{ background: T.line }}>
-      <motion.div
-        className="h-full rounded-full"
-        style={{ background: color }}
-        initial={{ width: "0%" }}
-        whileInView={{ width: `${value}%` }}
-        viewport={{ once: true, margin: "-10% 0px" }}
-        transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
-      />
-    </div>
-  );
-}
-
-function SensorRow({ sensor, index }: any) {
-  const Icon = sensorIcon[sensor.icon] || Activity;
-  const tone = !sensor.online ? "bad" : sensor.issues > 1 ? "warn" : "good";
-  const st = toneStyles[tone];
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 14 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-10% 0px" }}
-      transition={{ duration: 0.45, delay: index * 0.07 }}
-      whileHover={{ y: -2 }}
-      className="rounded-[16px] border p-4"
-      style={{ borderColor: T.line, background: T.creamSoft }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-[11px]" style={{ background: st.bg, color: st.fg }}>
-            <Icon size={16} />
-            {sensor.online && (
-              <motion.span
-                className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2"
-                style={{ background: T.emerald, borderColor: T.creamSoft }}
-                animate={{ scale: [1, 1.35, 1], opacity: [1, 0.6, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: index * 0.2 }}
-              />
-            )}
-          </div>
-          <div>
-            <div className="text-[13px] font-semibold" style={{ color: T.ink }}>{sensor.name}</div>
-            <div className="text-[11px]" style={{ color: T.inkSoft }}>{sensor.model}</div>
-          </div>
-        </div>
-        <span
-          className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-          style={{ color: sensor.online ? T.emerald : T.red, background: sensor.online ? T.mint : T.redSoft }}
-        >
-          {sensor.online ? <Wifi size={10} /> : <WifiOff size={10} />}
-          {sensor.online ? "Online" : "Offline"}
-        </span>
-      </div>
-
-      <div className="mt-4 space-y-3">
-        <div>
-          <div className="mb-1 flex items-center justify-between text-[11px]" style={{ color: T.inkSoft }}>
-            <span>Uptime</span>
-            <span className="font-semibold" style={{ color: T.ink }}>{sensor.uptime}%</span>
-          </div>
-          <ProgressBar value={sensor.uptime} color={T.emerald} delay={index * 0.07 + 0.05} />
-        </div>
-        <div>
-          <div className="mb-1 flex items-center justify-between text-[11px]" style={{ color: T.inkSoft }}>
-            <span>Data Quality</span>
-            <span className="font-semibold" style={{ color: T.ink }}>{sensor.quality}%</span>
-          </div>
-          <ProgressBar value={sensor.quality} color={T.emeraldBright} delay={index * 0.07 + 0.12} />
-        </div>
-      </div>
-
-      <div className="mt-3.5 flex items-center justify-between border-t pt-3 text-[11px]" style={{ borderColor: T.line, color: T.inkSoft }}>
-        <span className="flex items-center gap-1.5">
-          <Signal size={12} /> {sensor.lastComm}
-        </span>
-        <span style={{ color: sensor.issues > 0 ? T.amber : T.inkSoft, fontWeight: sensor.issues > 0 ? 600 : 400 }}>
-          {sensor.issues} issue{sensor.issues === 1 ? "" : "s"}
-        </span>
-      </div>
-    </motion.div>
-  );
-}
-
-function SensorIntelligence() {
+function SensorIntelligence({ sensors }: { sensors: any[] }) {
   return (
     <section className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-9">
       <div className="mb-4">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>
-          Sensor Intelligence
-        </div>
-        <h2 className="mt-1 text-[22px] font-medium" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>
-          Every device, monitored like infrastructure
-        </h2>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>Sensor Intelligence</div>
+        <h2 className="mt-1 text-[22px] font-medium" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>Every device, monitored like infrastructure</h2>
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {SENSORS.map((s, i) => (
-          <SensorRow key={s.id} sensor={s} index={i} />
-        ))}
+        {sensors.map((s) => {
+          const Icon = sensorIcon[s.icon] || Activity;
+          return (
+            <div key={s.id} className="rounded-[16px] border p-4" style={{ borderColor: T.line, background: T.creamSoft }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icon size={16} style={{ color: T.emerald }} />
+                  <span className="text-[13px] font-semibold">{s.name}</span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 uppercase">Online</span>
+              </div>
+              <div className="mt-3 text-[11px]" style={{ color: T.inkSoft }}>Uptime: {s.uptime}%</div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
 }
-
-const patternField = [
-  { label: "Pattern", icon: Radar, text: "4 of the last 7 shipments experienced temperature drift above the safe range." },
-  { label: "Likely Cause", icon: Wrench, text: "Cooling performance degradation." },
-  { label: "Impact", icon: TrendingUp, text: "23% higher spoilage risk." },
-  { label: "Recommendation", icon: ShieldCheck, text: "Inspect refrigeration before the next dispatch." },
-];
 
 function AIPatternDetected() {
   return (
     <section className="mx-auto max-w-[1240px] px-4 py-8 sm:px-6 sm:py-9">
-      <motion.div
-        initial={{ opacity: 0, y: 18 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-10% 0px" }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="relative overflow-hidden rounded-[24px] p-6 sm:p-8"
-        style={{ background: `linear-gradient(155deg, ${T.forest} 0%, #0B2A1D 100%)` }}
-      >
-        <motion.div
-          className="pointer-events-none absolute -left-24 -top-24 h-[340px] w-[340px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(31,163,92,0.16) 0%, transparent 70%)" }}
-          animate={{ opacity: [0.5, 0.85, 0.5] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-        />
-        <motion.div
-          className="pointer-events-none absolute -bottom-32 -right-16 h-[300px] w-[300px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)" }}
-          animate={{ opacity: [0.4, 0.7, 0.4] }}
-          transition={{ duration: 7, repeat: Infinity, ease: "easeInOut", delay: 1.5 }}
-        />
-
-        <div className="relative">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-[11px]" style={{ background: "rgba(255,255,255,0.1)" }}>
-                <Brain size={17} color="#fff" />
-              </div>
-              <span className="text-[13px] font-semibold uppercase tracking-[0.1em] text-white/85">
-                AI Pattern Detected
-              </span>
-            </div>
-            <span className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold" style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.75)" }}>
-              <motion.span
-                className="h-1.5 w-1.5 rounded-full"
-                style={{ background: T.emeraldBright }}
-                animate={{ opacity: [1, 0.35, 1] }}
-                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-              />
-              Analyzing live signals
-            </span>
-          </div>
-
-          <motion.h3
-            initial={{ opacity: 0, y: 10 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="max-w-[620px] text-[24px] font-medium leading-snug sm:text-[27px]"
-            style={{ fontFamily: "'Fraunces', serif", color: "#fff" }}
-          >
-            Temperature excursions are increasing on the{" "}
-            <span style={{ color: T.emeraldBright }}>Mumbai → Pune</span> corridor.
-          </motion.h3>
-
-          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {patternField.map((f, i) => (
-              <motion.div
-                key={f.label}
-                initial={{ opacity: 0, y: 12 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-10% 0px" }}
-                transition={{ duration: 0.45, delay: 0.15 + i * 0.08 }}
-                className="rounded-[15px] border p-4"
-                style={{ borderColor: "rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)" }}
-              >
-                <div className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.08em]" style={{ color: T.emeraldBright }}>
-                  <f.icon size={12} />
-                  {f.label}
-                </div>
-                <p className="mt-2 text-[12.5px] leading-relaxed text-white/80">{f.text}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="mt-6 flex flex-col items-start justify-between gap-4 border-t pt-5 sm:flex-row sm:items-center"
-            style={{ borderColor: "rgba(255,255,255,0.1)" }}
-          >
-            <span className="text-[11.5px]" style={{ color: "rgba(255,255,255,0.55)" }}>
-              Based on the last 7 shipments on this corridor · confidence 91%
-            </span>
-            <button className="flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[12.5px] font-semibold" style={{ color: T.forest }}>
-              View Full AI Insight →
-            </button>
-          </motion.div>
+      <div className="relative overflow-hidden rounded-[24px] p-6 sm:p-8" style={{ background: `linear-gradient(155deg, ${T.forest} 0%, #0B2A1D 100%)` }}>
+        <div className="flex items-center gap-2.5 text-white/85 text-[13px] font-semibold uppercase tracking-[0.1em]">
+          <Brain size={17} color="#fff" /> AI Pattern Detected
         </div>
-      </motion.div>
+        <h3 className="mt-3 max-w-[620px] text-[24px] font-medium leading-snug text-white" style={{ fontFamily: "'Fraunces', serif" }}>
+          Temperature excursions are increasing on the <span style={{ color: T.emeraldBright }}>Mumbai → Pune</span> corridor.
+        </h3>
+      </div>
     </section>
   );
 }
 
-const IMPACT_METRICS = [
-  { value: 2.4, prefix: "₹", suffix: "L", decimals: 1, label: "Losses Prevented", note: "Estimated spoilage value averted this period" },
-  { value: 18, suffix: "", decimals: 0, label: "High-Risk Shipments Intercepted", note: "Flagged and corrected before delivery" },
-  { value: 96.4, suffix: "%", decimals: 1, label: "Cold-Chain Compliance", note: "Time spent within the safe temperature band" },
-  { value: 42, suffix: "h", decimals: 0, label: "Potential Spoilage Avoided", note: "Cumulative exposure time prevented" },
-];
-
-function LossPrevention() {
+function LossPrevention({ impact }: { impact: any[] }) {
   return (
     <section className="mx-auto max-w-[1240px] px-4 py-10 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-[640px] text-center">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>
-          Business Impact
-        </div>
-        <h2 className="mt-2 text-[28px] font-medium leading-tight sm:text-[32px]" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>
-          Measure what ChillChain prevented.
-        </h2>
-        <p className="mt-3 text-[14.5px] leading-relaxed" style={{ color: T.inkSoft }}>
-          ChillChain doesn't just monitor cold-chain shipments — it intercepts risk before it
-          becomes a financial loss.
-        </p>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color: T.emerald }}>Business Impact</div>
+        <h2 className="mt-2 text-[28px] font-medium leading-tight sm:text-[32px]" style={{ fontFamily: "'Fraunces', serif", color: T.ink }}>Measure what ChillChain prevented.</h2>
       </div>
-
       <div className="mt-8 grid grid-cols-1 gap-px overflow-hidden rounded-[22px] border sm:grid-cols-2 lg:grid-cols-4" style={{ borderColor: T.line, background: T.line }}>
-        {IMPACT_METRICS.map((m, i) => (
-          <motion.div
-            key={m.label}
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-10% 0px" }}
-            transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col items-center px-6 py-7 text-center"
-            style={{ background: T.creamSoft }}
-          >
-            <div className="text-[38px] font-medium leading-none sm:text-[42px]" style={{ fontFamily: "'Fraunces', serif", color: T.forest }}>
-              <CountUp value={m.value} decimals={m.decimals} prefix={m.prefix || ""} suffix={m.suffix} />
+        {impact.map((m, i) => (
+          <div key={i} className="flex flex-col items-center px-6 py-7 text-center" style={{ background: T.creamSoft }}>
+            <div className="text-[38px] font-medium leading-none" style={{ fontFamily: "'Fraunces', serif", color: T.forest }}>
+              <CountUp value={m.value} decimals={m.decimals || 0} prefix={m.prefix || ""} suffix={m.suffix || ""} />
             </div>
             <div className="mt-3 text-[13px] font-semibold" style={{ color: T.ink }}>{m.label}</div>
-            <div className="mt-1.5 max-w-[190px] text-[11.5px] leading-snug" style={{ color: T.inkSoft }}>{m.note}</div>
-          </motion.div>
+          </div>
         ))}
       </div>
     </section>
@@ -1300,35 +655,30 @@ export default function AnalyticsPage() {
   const [range, setRange] = useState("24H");
   const [shipment, setShipment] = useState("ALL");
   const [shipmentsList, setShipmentsList] = useState<any[]>([]);
-  const [metrics, setMetrics] = useState<any>(null);
+  const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [liveTelemetry, setLiveTelemetry] = useState<any>(null);
 
-  // 1. Fetch metrics & list of shipments from backend
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/v1/shipments/metrics`)
+    fetch(`${API_BASE_URL}/api/v1/analytics?range=${range}&shipmentId=${shipment}`)
       .then((res) => res.json())
       .then((resData) => {
-        if (resData.success) setMetrics(resData.data);
+        if (resData.success) setAnalyticsData(resData.data);
       })
-      .catch((err) => console.error("Metrics fetch error:", err));
+      .catch((err) => console.error("Analytics fetch error:", err));
 
     fetch(`${API_BASE_URL}/api/v1/shipments`)
       .then((res) => res.json())
       .then((resData) => {
-        if (resData.success) setShipmentsList(resData.data);
+        const raw = resData.data || resData;
+        if (Array.isArray(raw)) setShipmentsList(raw);
       })
       .catch((err) => console.error("Shipments fetch error:", err));
-  }, []);
+  }, [range, shipment]);
 
-  // 2. Setup Socket.io real-time listener
   useEffect(() => {
     const socket: Socket = io(API_BASE_URL);
 
-    socket.on("connect", () => {
-      console.log("Connected to Socket.io backend server");
-    });
-
-    socket.on("telemetry:update", (data: any) => {
+    socket.on("telemetry_update", (data: any) => {
       if (shipment === "ALL" || shipment === data.shipmentId) {
         setLiveTelemetry(data);
       }
@@ -1338,6 +688,11 @@ export default function AnalyticsPage() {
       socket.disconnect();
     };
   }, [shipment]);
+
+  const kpis = analyticsData?.kpis || [];
+  const routes = analyticsData?.routes || [];
+  const sensors = analyticsData?.sensors || SENSORS;
+  const impact = analyticsData?.impact || IMPACT_METRICS;
 
   return (
     <div className="overflow-x-hidden" style={{ background: T.cream, minHeight: "100vh", fontFamily: "'Inter', sans-serif" }}>
@@ -1349,15 +704,16 @@ export default function AnalyticsPage() {
         setShipment={setShipment}
         shipmentsList={shipmentsList}
       />
-      <KpiStrip range={range} />
+      <KpiStrip range={range} kpis={kpis} />
       <TemperatureChart range={range} liveTelemetry={liveTelemetry} />
-      <RiskIntelligence range={range} />
-      <RoutePerformance />
-      <SensorIntelligence />
-      <AIPatternDetected />
-      <LossPrevention />
+      {/* <RiskIntelligence range={range} /> */}
+      {/* <RoutePerformance routes={routes} /> */}
+      {/* <SensorIntelligence sensors={sensors} /> */}
+      {/* <AIPatternDetected /> */}
+      {/* <LossPrevention impact={impact} /> */}
+      
       <div className="mx-auto max-w-[1240px] px-6 pb-16 pt-2 text-center text-[11.5px]" style={{ color: T.inkSoft }}>
-        ChillChain AI · Hackathon build
+        ChillChain AI · Operational Analytics Active
       </div>
     </div>
   );
