@@ -15,7 +15,9 @@ import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as DevicesRouteImport } from './routes/devices'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as RiskSpoilageRouteImport } from './routes/risk-spoilage'
 import { Route as ShipmentsRouteImport } from './routes/shipments'
+import { Route as StorageRouteImport } from './routes/storage'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -47,9 +49,19 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RiskSpoilageRoute = RiskSpoilageRouteImport.update({
+  id: '/risk-spoilage',
+  path: '/risk-spoilage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShipmentsRoute = ShipmentsRouteImport.update({
   id: '/shipments',
   path: '/shipments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StorageRoute = StorageRouteImport.update({
+  id: '/storage',
+  path: '/storage',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -60,7 +72,9 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/devices': typeof DevicesRoute
   '/profile': typeof ProfileRoute
+  '/risk-spoilage': typeof RiskSpoilageRoute
   '/shipments': typeof ShipmentsRoute
+  '/storage': typeof StorageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -69,7 +83,9 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/devices': typeof DevicesRoute
   '/profile': typeof ProfileRoute
+  '/risk-spoilage': typeof RiskSpoilageRoute
   '/shipments': typeof ShipmentsRoute
+  '/storage': typeof StorageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -79,7 +95,9 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/devices': typeof DevicesRoute
   '/profile': typeof ProfileRoute
+  '/risk-spoilage': typeof RiskSpoilageRoute
   '/shipments': typeof ShipmentsRoute
+  '/storage': typeof StorageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -90,7 +108,9 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/devices'
     | '/profile'
+    | '/risk-spoilage'
     | '/shipments'
+    | '/storage'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -99,7 +119,9 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/devices'
     | '/profile'
+    | '/risk-spoilage'
     | '/shipments'
+    | '/storage'
   id:
     | '__root__'
     | '/'
@@ -108,7 +130,9 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/devices'
     | '/profile'
+    | '/risk-spoilage'
     | '/shipments'
+    | '/storage'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,7 +142,9 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   DevicesRoute: typeof DevicesRoute
   ProfileRoute: typeof ProfileRoute
+  RiskSpoilageRoute: typeof RiskSpoilageRoute
   ShipmentsRoute: typeof ShipmentsRoute
+  StorageRoute: typeof StorageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -165,11 +191,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/risk-spoilage': {
+      id: '/risk-spoilage'
+      path: '/risk-spoilage'
+      fullPath: '/risk-spoilage'
+      preLoaderRoute: typeof RiskSpoilageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shipments': {
       id: '/shipments'
       path: '/shipments'
       fullPath: '/shipments'
       preLoaderRoute: typeof ShipmentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/storage': {
+      id: '/storage'
+      path: '/storage'
+      fullPath: '/storage'
+      preLoaderRoute: typeof StorageRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -182,7 +222,9 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   DevicesRoute: DevicesRoute,
   ProfileRoute: ProfileRoute,
+  RiskSpoilageRoute: RiskSpoilageRoute,
   ShipmentsRoute: ShipmentsRoute,
+  StorageRoute: StorageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
