@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
+import Shipment from '../models/Shipment';
 
 const router = Router();
 
@@ -20,6 +21,19 @@ router.get('/directions', async (req: Request, res: Response): Promise<void> => 
 
     const response = await axios.get(url);
     res.status(200).json({ success: true, data: response.data });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/v1/map/live - Returns active fleet telemetry locations
+router.get('/live', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    // Replace status: 'IN_TRANSIT' with valid schema values or filter by active status
+const activeShipments = await Shipment.find({ status: { $in: ['HEALTHY', 'AT_RISK', 'CRITICAL'] } }).select(
+  'shipmentId origin destination currentLocation temperature healthScore status'
+);
+    res.status(200).json({ success: true, data: activeShipments });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }

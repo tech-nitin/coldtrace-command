@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import Telemetry from '../models/Telemetry.js'; // Default import (no braces)
+import {Telemetry} from '../models/Telemetry.js'; // Default import (no braces)
 import Shipment from '../models/Shipment.js';   // Default import (no braces)
 import { evaluateTelemetryAlerts } from '../services/alert.service.js';
 import { calculateCargoHealth } from '../utils/healthCalculator.js';
@@ -54,7 +54,7 @@ const handleIngest = async (req: Request, res: Response): Promise<void> => {
       status,
       aiRiskLevel,
       location: coords,
-      timestamp: telemetry.createdAt,
+      timestamp: telemetry.timestamp,
     };
     socketService.emitTelemetryUpdate(activeShipmentId, livePayload);
 

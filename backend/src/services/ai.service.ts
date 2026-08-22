@@ -32,7 +32,7 @@ export async function analyzeShipmentRisk(telemetry: {
   });
 
   try {
-    const cleanJson = response.text.replace(/```json|```/g, '').trim();
+    const cleanJson = (response.text || '').replace(/```json|```/g, '').trim();
     return JSON.parse(cleanJson);
   } catch (err) {
     return {
