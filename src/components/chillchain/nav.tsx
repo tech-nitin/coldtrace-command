@@ -8,8 +8,8 @@ const LINKS = [
   { to: "/shipments", label: "Shipments" },
   // { to: "/live-tracking", label: "Live Tracking" },
   { to: "/analytics", label: "Analytics" },
-  // { to: "/ai-insights", label: "AI Insights" },
-  // { to: "/alerts", label: "Alerts" },
+  { to: "/ai-insights", label: "AI Insights" },
+  // { to: "/alerts", label: "Alerts" }, // Enabled Alerts link
   { to: "/devices", label: "Devices" },
 ];
 

@@ -1,16 +1,14 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { motion, AnimatePresence, useInView, useMotionValue, animate } from "framer-motion";
+import { motion, useInView, useMotionValue, animate } from "framer-motion";
 import {
-  AreaChart, Area, Line, ReferenceLine, XAxis, YAxis, CartesianGrid,
+  AreaChart, Area, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ComposedChart,
 } from "recharts";
 import {
   Thermometer, Droplets, TrendingUp, TrendingDown, AlertTriangle,
-  ShieldCheck, IndianRupee, ChevronDown, Download, Radio, Truck,
-  MapPin, Bell, LayoutDashboard, LineChart as LineChartIcon, Sparkles,
-  PieChart as PieChartIcon, Route as RouteIcon, Activity, Satellite,
-  Wifi, WifiOff, Signal, Gauge, ArrowUpRight, ChevronRight,
-  Radar, Wrench, Brain,
+  ShieldCheck, IndianRupee, ChevronDown, Download, Radio,
+  ChevronRight, LineChart as LineChartIcon, PieChart as PieChartIcon,
+  Route as RouteIcon, Activity, Satellite, Gauge, Brain,
 } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 
@@ -137,12 +135,6 @@ function buildRiskDistribution(range: string) {
     { key: "critical", label: "Critical", pct: last.Critical, color: T.red },
   ];
   return segments.map((s) => ({ ...s, count: Math.max(1, Math.round((s.pct / 100) * total)) }));
-}
-
-function routeTone(health: number) {
-  if (health >= 88) return "good";
-  if (health >= 74) return "warn";
-  return "bad";
 }
 
 const SENSORS = [
@@ -428,10 +420,13 @@ function KpiStrip({ range, kpis }: { range: string; kpis: any[] }) {
   );
 }
 
-function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemetry: any }) {
-  const { data, stats } = useMemo(() => buildTempSeries(range), [range]);
+function TemperatureChart({ range, liveTelemetry, dbSeries }: { range: string; liveTelemetry: any; dbSeries?: any[] }) {
+  const { data: generatedData } = useMemo(() => buildTempSeries(range), [range]);
 
-  const currentTemp = Number(liveTelemetry?.temperature ?? data[data.length - 1].temp).toFixed(1);
+  // Priority: Real DB series if available, otherwise synthetic generated points
+  const chartData = dbSeries && dbSeries.length > 0 ? dbSeries : generatedData;
+
+  const currentTemp = Number(liveTelemetry?.temperature ?? chartData[chartData.length - 1]?.temp ?? 9.6).toFixed(1);
   const isCritical = Number(currentTemp) > 10.0;
 
   return (
@@ -480,11 +475,12 @@ function TemperatureChart({ range, liveTelemetry }: { range: string; liveTelemet
 
           <div style={{ width: "100%", height: 280 }}>
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={data} margin={{ top: 10, right: 12, left: -18, bottom: 0 }}>
+              <ComposedChart data={chartData} margin={{ top: 10, right: 12, left: -18, bottom: 0 }}>
                 <CartesianGrid vertical={false} stroke={T.line} strokeDasharray="3 4" />
                 <XAxis dataKey="label" tick={{ fontSize: 10.5, fill: T.inkSoft }} axisLine={{ stroke: T.line }} />
-                <YAxis tick={{ fontSize: 10.5, fill: T.inkSoft }} domain={[0, 14]} tickFormatter={(v) => `${v}°`} width={34} />
-                <Line type="monotone" dataKey="temp" stroke={T.emerald} strokeWidth={2.5} dot={false} />
+                <YAxis tick={{ fontSize: 10.5, fill: T.inkSoft }} domain={[0, 15]} tickFormatter={(v) => `${v}°`} width={34} />
+                <Tooltip contentStyle={{ borderRadius: "12px", border: "1px solid #E4DFD1", background: "#FFF" }} />
+                <Line type="monotone" dataKey="temp" stroke={T.emerald} strokeWidth={2.5} dot={{ r: 3, fill: T.emerald }} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>
@@ -657,6 +653,7 @@ export default function AnalyticsPage() {
   const [shipmentsList, setShipmentsList] = useState<any[]>([]);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [liveTelemetry, setLiveTelemetry] = useState<any>(null);
+  const [dbTelemetrySeries, setDbTelemetrySeries] = useState<any[]>([]);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/v1/analytics?range=${range}&shipmentId=${shipment}`)
@@ -673,6 +670,21 @@ export default function AnalyticsPage() {
         if (Array.isArray(raw)) setShipmentsList(raw);
       })
       .catch((err) => console.error("Shipments fetch error:", err));
+
+    const targetShipment = shipment === "ALL" ? "CG-10490" : shipment;
+    fetch(`${API_BASE_URL}/api/v1/telemetry/history/${targetShipment}`)
+      .then((res) => res.json())
+      .then((resData) => {
+        if (resData.data && resData.data.length > 0) {
+          const mapped = resData.data.map((item: any) => ({
+            label: item.time || new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            temp: item.temperature,
+            humidity: item.humidity
+          }));
+          setDbTelemetrySeries(mapped);
+        }
+      })
+      .catch((err) => console.error("Telemetry history fetch error:", err));
   }, [range, shipment]);
 
   useEffect(() => {
@@ -681,6 +693,15 @@ export default function AnalyticsPage() {
     socket.on("telemetry_update", (data: any) => {
       if (shipment === "ALL" || shipment === data.shipmentId) {
         setLiveTelemetry(data);
+
+        setDbTelemetrySeries((prev) => {
+          const newPoint = {
+            label: new Date(data.timestamp || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            temp: data.temperature,
+            humidity: data.humidity
+          };
+          return [...prev, newPoint].slice(-30);
+        });
       }
     });
 
@@ -705,7 +726,11 @@ export default function AnalyticsPage() {
         shipmentsList={shipmentsList}
       />
       <KpiStrip range={range} kpis={kpis} />
-      <TemperatureChart range={range} liveTelemetry={liveTelemetry} />
+      <TemperatureChart
+        range={range}
+        liveTelemetry={liveTelemetry}
+        dbSeries={dbTelemetrySeries}
+      />
       {/* <RiskIntelligence range={range} /> */}
       {/* <RoutePerformance routes={routes} /> */}
       {/* <SensorIntelligence sensors={sensors} /> */}
