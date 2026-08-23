@@ -1,41 +1,97 @@
 import { Alert } from '../models/Alert.js';
-import  Shipment  from '../models/Shipment.js';
+import Shipment from '../models/Shipment.js';
 
 export const evaluateTelemetryAlerts = async (
   deviceId: string,
   shipmentId: string,
   temperature: number,
-  humidity: number
+  humidity?: number
 ) => {
-  // 1. Fetch active shipment details and its temperature limits
-  const shipment = await Shipment.findOne({ shipmentCode: shipmentId });
-  if (!shipment) return null;
+  try {
+    // 1. Find shipment using the correct field
+    const shipment = await Shipment.findOne({ shipmentId });
 
-  const { minTemp: min, maxTemp: max } = shipment.thresholds || { minTemp: 2.0, maxTemp: 8.0 };
-  let alertTriggered = false;
-  let alertType: 'TEMP_EXCEEDED' | 'TEMP_TOO_LOW' = 'TEMP_EXCEEDED';
-  let thresholdLimit = max;
-  let severity: 'HIGH' | 'CRITICAL' = 'HIGH';
+    if (!shipment) {
+      console.warn(
+        `[Alert] Shipment not found for shipmentId: ${shipmentId}`
+      );
+      return null;
+    }
 
-  // 2. Check upper limit breach
-  if (temperature > max) {
-    alertTriggered = true;
-    alertType = 'TEMP_EXCEEDED';
-    thresholdLimit = max;
-    severity = temperature > max + 5 ? 'CRITICAL' : 'HIGH';
-  } 
-  // 3. Check lower limit breach
-  else if (temperature < min) {
-    alertTriggered = true;
-    alertType = 'TEMP_TOO_LOW';
-    thresholdLimit = min;
-    severity = temperature < min - 3 ? 'CRITICAL' : 'HIGH';
-  }
+    // 2. Get shipment temperature thresholds
+    const {
+      minTemp = 2.0,
+      maxTemp = 8.0,
+    } = shipment.thresholds || {};
 
-  // 4. Save alert & update shipment status if breached
-  if (alertTriggered) {
-    const message = `Temperature breach detected! Current: ${temperature}°C (Limit: ${min}°C - ${max}°C)`;
-    
+    let alertTriggered = false;
+
+    let alertType: 'TEMP_EXCEEDED' | 'TEMP_TOO_LOW' =
+      'TEMP_EXCEEDED';
+
+    let thresholdLimit = maxTemp;
+
+    let severity: 'HIGH' | 'CRITICAL' = 'HIGH';
+
+    // 3. Check upper temperature limit
+    if (temperature > maxTemp) {
+      alertTriggered = true;
+
+      alertType = 'TEMP_EXCEEDED';
+
+      thresholdLimit = maxTemp;
+
+      severity =
+        temperature > maxTemp + 5
+          ? 'CRITICAL'
+          : 'HIGH';
+    }
+
+    // 4. Check lower temperature limit
+    else if (temperature < minTemp) {
+      alertTriggered = true;
+
+      alertType = 'TEMP_TOO_LOW';
+
+      thresholdLimit = minTemp;
+
+      severity =
+        temperature < minTemp - 3
+          ? 'CRITICAL'
+          : 'HIGH';
+    }
+
+    // 5. No temperature breach
+    if (!alertTriggered) {
+      return null;
+    }
+
+    // 6. Prevent duplicate active alerts
+    const existingAlert = await Alert.findOne({
+      shipmentId,
+      deviceId,
+      alertType,
+      status: 'ACTIVE',
+    }).sort({ createdAt: -1 });
+
+    // If an active alert of the same type already exists,
+    // update it instead of creating unlimited alerts
+    if (existingAlert) {
+      existingAlert.readingValue = temperature;
+      existingAlert.thresholdLimit = thresholdLimit;
+      existingAlert.severity = severity;
+
+      await existingAlert.save();
+
+      return existingAlert;
+    }
+
+    // 7. Create alert message
+    const message =
+      `Temperature breach detected! Current: ${temperature}°C ` +
+      `(Allowed range: ${minTemp}°C - ${maxTemp}°C)`;
+
+    // 8. Create new alert
     const newAlert = await Alert.create({
       shipmentId,
       deviceId,
@@ -47,12 +103,22 @@ export const evaluateTelemetryAlerts = async (
       status: 'ACTIVE',
     });
 
-    // Mark shipment status as COMPROMISED
+    // 9. Mark shipment as CRITICAL
     shipment.status = 'CRITICAL';
+
     await shipment.save();
 
-    return newAlert;
-  }
+    console.log(
+      `[Alert] ${severity} alert created for shipment: ${shipmentId}`
+    );
 
-  return null;
+    return newAlert;
+  } catch (error) {
+    console.error(
+      '[Alert Service Error]',
+      error
+    );
+
+    return null;
+  }
 };

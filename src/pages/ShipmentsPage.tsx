@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { io } from "socket.io-client";
-
+import { socket } from "@/services/socket";
 import { ShipmentsHeader } from "../components/shipments/ShipmentsHeader";
 import { OperationsKpiStrip } from "../components/shipments/OperationsKpiStrip";
 import { ShipmentsToolbar } from "../components/shipments/ShipmentsToolbar";
@@ -146,7 +146,7 @@ export default function ShipmentsPage() {
   }, []);
 
   useEffect(() => {
-    const socket = io(SOCKET_URL);
+    // const socket = io(SOCKET_URL);
 
     socket.on("telemetry_update", (data: any) => {
       setShipments((prev) =>

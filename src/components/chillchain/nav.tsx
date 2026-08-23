@@ -10,6 +10,7 @@ const LINKS = [
   { to: "/storage", label: "Storage" },
   { to: "/risk-spoilage", label: "Risk & Spoilage" },
   { to: "/analytics", label: "Analytics" },
+  // { to: "/alerts", label: "Alerts" },
   { to: "/devices", label: "Devices" },
 ] as const;
 

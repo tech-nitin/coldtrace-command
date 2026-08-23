@@ -1,73 +1,146 @@
 import { Router, Request, Response } from 'express';
-import {Telemetry} from '../models/Telemetry.js'; // Default import (no braces)
-import Shipment from '../models/Shipment.js';   // Default import (no braces)
+
+import { Telemetry } from '../models/Telemetry.js';
+import Shipment from '../models/Shipment.js';
+
 import { evaluateTelemetryAlerts } from '../services/alert.service.js';
 import { calculateCargoHealth } from '../utils/healthCalculator.js';
 import { socketService } from '../services/socket.service.js';
 
 const router = Router();
 
-const handleIngest = async (req: Request, res: Response): Promise<void> => {
+const handleIngest = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const { deviceId, shipmentId, temperature, humidity, location, latitude, longitude } = req.body;
+    const {
+      deviceId,
+      shipmentId,
+      temperature,
+      humidity,
+      location,
+      latitude,
+      longitude,
+    } = req.body;
 
-    const activeShipmentId = shipmentId || "CG-10490";
-    
-    // Check if Shipment model exists before querying
-    const shipment = Shipment ? await Shipment.findOne({ shipmentId: activeShipmentId }) : null;
+    // Use provided shipment ID or fallback ID
+    const activeShipmentId = shipmentId || 'CG-10490';
 
-    const thresholds = shipment?.thresholds || { maxTemp: 8.0, minTemp: 2.0, maxHumidity: 80 };
-    const { healthIndex, status, aiRiskLevel } = calculateCargoHealth(temperature, humidity, thresholds);
+    // 1. Find shipment
+    const shipment = await Shipment.findOne({
+      shipmentId: activeShipmentId,
+    });
 
-    const coords = location?.coordinates || [longitude || 73.8567, latitude || 18.5204];
+    // Shipment temperature thresholds
+    const thresholds = shipment?.thresholds || {
+      minTemp: 2.0,
+      maxTemp: 8.0,
+      maxHumidity: 80,
+    };
 
-    // 1. Save telemetry
+    // 2. Calculate cargo health
+    const { healthIndex, status, aiRiskLevel } =
+      calculateCargoHealth(
+        temperature,
+        humidity,
+        thresholds
+      );
+
+    // 3. Get location coordinates
+    const coords =
+      location?.coordinates ??
+      [
+        longitude ?? 73.8567,
+        latitude ?? 18.5204,
+      ];
+
+    // 4. Save telemetry data
     const telemetry = await Telemetry.create({
       deviceId,
       shipmentId: activeShipmentId,
       temperature,
       humidity,
       healthIndex,
-      location: { type: 'Point', coordinates: coords },
+      location: {
+        type: 'Point',
+        coordinates: coords,
+      },
     });
 
-    // 2. Evaluate alert triggers safely
-    let triggeredAlert = null;
-    if (typeof evaluateTelemetryAlerts === 'function') {
-      triggeredAlert = await evaluateTelemetryAlerts(deviceId, activeShipmentId, temperature, humidity);
-    }
-
-    // 3. Update Shipment document status
+    // 5. Update shipment with normal health status
     if (shipment) {
       shipment.status = status;
       shipment.aiRiskLevel = aiRiskLevel;
-      shipment.currentLocation = { type: 'Point', coordinates: coords };
+
+      shipment.currentLocation = {
+        type: 'Point',
+        coordinates: coords,
+      };
+
       await shipment.save();
     }
 
-    // 4. Broadcast live Socket.io payload to React UI
+    // 6. Check for temperature alerts
+    const triggeredAlert =
+      await evaluateTelemetryAlerts(
+        deviceId,
+        activeShipmentId,
+        temperature,
+        humidity
+      );
+
+      if (triggeredAlert) {
+  socketService.emitAlert(
+    activeShipmentId,
+    triggeredAlert
+  );
+}
+
+    // If an alert is triggered, shipment status becomes CRITICAL
+    const finalStatus = triggeredAlert
+      ? 'CRITICAL'
+      : status;
+
+    // 7. Prepare real-time payload
     const livePayload = {
       shipmentId: activeShipmentId,
       temperature,
       humidity,
       healthIndex,
-      status,
+      status: finalStatus,
       aiRiskLevel,
       location: coords,
       timestamp: telemetry.timestamp,
+      alert: triggeredAlert,
     };
-    socketService.emitTelemetryUpdate(activeShipmentId, livePayload);
 
+    // 8. Send real-time update through Socket.IO
+    socketService.emitTelemetryUpdate(
+      activeShipmentId,
+      livePayload
+    );
+
+    // 9. Send API response
     res.status(201).json({
       success: true,
       data: telemetry,
       alert: triggeredAlert || null,
     });
   } catch (err: any) {
-    res.status(400).json({ success: false, error: err.message });
+    console.error(
+      '[Telemetry Ingest Error]',
+      err
+    );
+
+    res.status(400).json({
+      success: false,
+      error: err.message,
+    });
   }
 };
 
+// Support both routes
 router.post('/', handleIngest);
 router.post('/ingest', handleIngest);
 
