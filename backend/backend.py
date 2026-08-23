@@ -21,8 +21,6 @@ MQTT_PASS = "Ajeetjain007@"
 MQTT_TOPIC = "coldchain/telemetry/#"
 DB_NAME = "ChillChainData"
 
-
-
 # 3. Database Connection
 mongo_client = MongoClient(MONGO_URI)
 db = mongo_client[DB_NAME]
@@ -30,7 +28,7 @@ telemetry_collection = db["telemetries"]
 
 # 4. Store Ingested Telemetry to MongoDB
 def save_telemetry(data):
-    device_id = data.get("device_id", "COLD_TRUCK_01")
+    device_id = data.get("device_id") or data.get("deviceId", "COLD_TRUCK_01")
     shipment_id = data.get("shipment_id") or data.get("shipmentId", "CG-10500")
     temp = data.get("temp")
     humidity = data.get("humidity")
@@ -52,8 +50,6 @@ def save_telemetry(data):
     }
     
     result = telemetry_collection.insert_one(doc)
-    
-    # Printed output with Temperature and Humidity
     print(f" [DB] Saved to MongoDB (ID: {result.inserted_id}) | Device: {device_id} | Temp: {temp}°C | Humidity: {humidity}%")
 
 # 5. MQTT Event Handlers
@@ -70,12 +66,25 @@ def on_message(client, userdata, msg):
         payload = json.loads(msg.payload.decode("utf-8"))
         print(f"\n Message received on {msg.topic}")
         
+        device_id = payload.get("device_id") or payload.get("deviceId", "COLD_TRUCK_01")
         temp = payload.get("temp")
         humidity = payload.get("humidity")
         print(f" [DATA] Received Sensor Data -> Temp: {temp}°C | Humidity: {humidity}%")
         
+        # Define the command topic for the specific hardware device
+        command_topic = f"coldchain/commands/{device_id}"
+
+        # ALARM LOGIC: Temperature threshold check
         if temp is not None and temp > 8.0:
             print(f" [ALERT] Temperature exceeded safety limit! ({temp}°C)")
+            alarm_payload = json.dumps({"alarm": True, "buzzer": "ON", "temp": temp})
+            client.publish(command_topic, alarm_payload)
+            print(f" [COMMAND] Sent ALARM ON signal to MQTT topic: {command_topic}")
+        elif temp is not None:
+            # Turn alarm off when temperature normalizes
+            alarm_payload = json.dumps({"alarm": False, "buzzer": "OFF", "temp": temp})
+            client.publish(command_topic, alarm_payload)
+            print(f" [COMMAND] Sent ALARM OFF signal to MQTT topic: {command_topic}")
             
         save_telemetry(payload)
     except Exception as e:
