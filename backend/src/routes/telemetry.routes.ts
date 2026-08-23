@@ -70,5 +70,27 @@ const handleIngest = async (req: Request, res: Response): Promise<void> => {
 
 router.post('/', handleIngest);
 router.post('/ingest', handleIngest);
+// GET historical temperature trajectory for Analytics graph
+router.get('/history/:shipmentId', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { shipmentId } = req.params;
+    
+    // Fetch last 30 telemetry points sorted by timestamp ascending
+    const records = await Telemetry.find({ shipmentId })
+      .sort({ timestamp: 1 })
+      .limit(30);
+
+    const formattedData = records.map((t) => ({
+      time: new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      temperature: t.temperature,
+      humidity: t.humidity,
+      healthIndex: t.healthIndex
+    }));
+
+    res.status(200).json({ success: true, data: formattedData });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 export default router;

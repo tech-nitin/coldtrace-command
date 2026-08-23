@@ -78,7 +78,7 @@ def on_message(client, userdata, msg):
             print(f" [ALERT] Temperature exceeded safety limit! ({temp}°C)")
             
         save_telemetry(payload)
-        except Exception as e:
+    except Exception as e:
         print(f" [ERROR] Could not parse message: {e}")
 
 # 6. Start Listener

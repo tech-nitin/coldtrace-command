@@ -1,19 +1,6 @@
 /**
  * ChillChain AI — Devices Page
  * "Device Intelligence" — IoT operations / control-center view
- *
- * Stack: React 18 + TypeScript + Tailwind CSS + Framer Motion + Recharts + Lucide React + react-leaflet
- *
- * Design system carried over from the ChillChain dashboard reference:
- *  - Warm paper background (#F7F5EE) with a deep forest-green (#0B3B2E) command layer
- *  - Emerald accent (#1F9D6C) for "live / healthy" states, amber (#D9A441) for warning, red (#D14343) for critical
- *  - Display type: Fraunces (editorial serif) for headings — Geist Mono for all sensor/telemetry readouts
- *  - Open, asymmetric sections rather than a uniform card grid, per design brief
- *
- * Drop this file into: src/pages/Devices.tsx (or app/devices/page.tsx for Next.js — add "use client")
- * Requires: framer-motion, recharts, lucide-react, react-leaflet, leaflet
- *   npm i framer-motion recharts lucide-react react-leaflet leaflet
- * Also import "leaflet/dist/leaflet.css" once globally (see bottom of file for note).
  */
 
 import React, {
@@ -41,7 +28,6 @@ import {
   Search,
   SlidersHorizontal,
   Plus,
-  Bell,
   ChevronRight,
   Thermometer,
   Droplets,
@@ -58,6 +44,7 @@ import {
   Gauge,
   Zap,
   Volume2,
+  X,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------------ */
@@ -84,10 +71,6 @@ const COLORS = {
 const fontDisplay = { fontFamily: '"Fraunces", "Iowan Old Style", Georgia, serif' };
 const fontMono = { fontFamily: '"Geist Mono", "JetBrains Mono", ui-monospace, monospace' };
 
-/* ------------------------------------------------------------------------ */
-/*  Mock data                                                                */
-/* ------------------------------------------------------------------------ */
-
 type DeviceStatus = "online" | "warning" | "offline";
 
 interface Device {
@@ -104,21 +87,6 @@ interface Device {
   lat: number;
   lng: number;
 }
-
-const DEVICES: Device[] = [
-  { id: "CHL-001", route: "Indore → Delhi", shipment: "Fresh Produce", temp: 4.8, humidity: 68, gps: "Connected", signal: "Excellent", battery: 87, status: "online", lastSync: "3s ago", lat: 24.5, lng: 78.2 },
-  { id: "CHL-002", route: "Mumbai → Bhopal", shipment: "Dairy Crates", temp: 5.2, humidity: 71, gps: "Connected", signal: "Good", battery: 74, status: "online", lastSync: "8s ago", lat: 21.9, lng: 75.1 },
-  { id: "CHL-003", route: "Pune → Nagpur", shipment: "Vaccines", temp: 3.9, humidity: 55, gps: "Connected", signal: "Excellent", battery: 92, status: "online", lastSync: "2s ago", lat: 19.9, lng: 78.0 },
-  { id: "CHL-004", route: "Delhi → Kolkata", shipment: "Fruits", temp: 9.6, humidity: 64, gps: "Connected", signal: "Good", battery: 61, status: "warning", lastSync: "14s ago", lat: 25.6, lng: 84.0 },
-  { id: "CHL-005", route: "Chennai → Bengaluru", shipment: "Seafood", temp: 2.1, humidity: 82, gps: "Connected", signal: "Excellent", battery: 95, status: "online", lastSync: "1s ago", lat: 12.6, lng: 78.6 },
-  { id: "CHL-006", route: "Hyderabad → Vijayawada", shipment: "Flowers", temp: 6.4, humidity: 59, gps: "Connected", signal: "Good", battery: 68, status: "online", lastSync: "6s ago", lat: 16.9, lng: 79.9 },
-  { id: "CHL-007", route: "Ahmedabad → Surat", shipment: "Meat", temp: 1.8, humidity: 77, gps: "Connected", signal: "Excellent", battery: 83, status: "online", lastSync: "4s ago", lat: 22.1, lng: 72.5 },
-  { id: "CHL-008", route: "Jaipur → Indore", shipment: "Dairy", temp: 5.5, humidity: 66, gps: "Weak", signal: "Poor", battery: 44, status: "warning", lastSync: "51s ago", lat: 24.9, lng: 75.6 },
-  { id: "CHL-009", route: "Lucknow → Patna", shipment: "Fruits", temp: 7.0, humidity: 60, gps: "Connected", signal: "Good", battery: 77, status: "online", lastSync: "9s ago", lat: 26.3, lng: 83.4 },
-  { id: "CHL-010", route: "Kolkata → Guwahati", shipment: "Fish", temp: 2.6, humidity: 85, gps: "Connected", signal: "Excellent", battery: 90, status: "online", lastSync: "2s ago", lat: 25.8, lng: 90.6 },
-  { id: "CHL-011", route: "Kochi → Coimbatore", shipment: "Vegetables", temp: 6.1, humidity: 63, gps: "Lost", signal: "Poor", battery: 12, status: "offline", lastSync: "4m ago", lat: 10.6, lng: 76.7 },
-  { id: "CHL-012", route: "Nashik → Pune", shipment: "Grapes", temp: 4.4, humidity: 58, gps: "Connected", signal: "Excellent", battery: 81, status: "online", lastSync: "5s ago", lat: 19.1, lng: 74.3 },
-];
 
 const DeviceMapClient = lazy(
   () => import("../components/chillchain/DeviceMapClient")
@@ -215,10 +183,6 @@ const COMMANDS = [
   { label: "Update Configuration", icon: Settings2 },
 ];
 
-/* ------------------------------------------------------------------------ */
-/*  Small utilities                                                         */
-/* ------------------------------------------------------------------------ */
-
 function statusColor(status: DeviceStatus) {
   if (status === "online") return COLORS.emerald;
   if (status === "warning") return COLORS.amber;
@@ -249,7 +213,7 @@ function AnimatedCounter({ value, decimals = 0, suffix = "" }: { value: number; 
 
   useEffect(() => {
     mv.set(value);
-  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [value, mv]);
 
   useEffect(() => {
     const unsub = spring.on("change", (v) => setDisplay(v.toFixed(decimals)));
@@ -268,13 +232,7 @@ const fadeUp: Variants = {
   }),
 };
 
-/* ------------------------------------------------------------------------ */
-
-/* ------------------------------------------------------------------------ */
-/*  Page title bar                                                          */
-/* ------------------------------------------------------------------------ */
-
-function TitleBar() {
+function TitleBar({ onAddClick }: { onAddClick: () => void }) {
   return (
     <div className="mx-auto max-w-[1440px] px-8 pt-12 pb-8 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
       <motion.div variants={fadeUp} initial="hidden" animate="show">
@@ -295,7 +253,7 @@ function TitleBar() {
         <button className="h-10 px-4 rounded-full border bg-white flex items-center gap-2 text-[13px] font-medium" style={{ borderColor: COLORS.line, color: COLORS.ink }}>
           <SlidersHorizontal size={14} /> Filter
         </button>
-        <button className="h-10 px-4 rounded-full flex items-center gap-2 text-[13px] font-medium text-white" style={{ backgroundColor: COLORS.forest }}>
+        <button onClick={onAddClick} className="h-10 px-4 rounded-full flex items-center gap-2 text-[13px] font-medium text-white cursor-pointer hover:opacity-90 transition-opacity" style={{ backgroundColor: COLORS.forest }}>
           <Plus size={14} /> Add Device
         </button>
       </motion.div>
@@ -303,15 +261,16 @@ function TitleBar() {
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*  Hero — pipeline / system status                                         */
-/* ------------------------------------------------------------------------ */
+function PipelineHero({ summary }: { summary: any }) {
+  const online = summary?.onlineNodes ?? 0;
+  const warning = summary?.warningNodes ?? 0;
+  const offline = summary?.offlineNodes ?? 0;
+  const healthNum = parseFloat(summary?.uptimePercent) || 98.2;
 
-function PipelineHero() {
   const stats = [
-    { label: "Devices Online", value: 12, color: COLORS.emerald },
-    { label: "Devices Warning", value: 2, color: COLORS.amber },
-    { label: "Device Offline", value: 1, color: COLORS.red },
+    { label: "Devices Online", value: online, color: COLORS.emerald },
+    { label: "Devices Warning", value: warning, color: COLORS.amber },
+    { label: "Device Offline", value: offline, color: COLORS.red },
   ];
 
   return (
@@ -344,17 +303,15 @@ function PipelineHero() {
             ))}
             <div className="text-right pl-6 border-l border-white/15">
               <div className="text-[26px] font-semibold text-white" style={fontMono}>
-                <AnimatedCounter value={98.2} decimals={1} suffix="%" />
+                <AnimatedCounter value={healthNum} decimals={1} suffix="%" />
               </div>
               <div className="text-[10px] tracking-[0.08em] uppercase text-white/50">Network Health</div>
             </div>
           </div>
         </div>
 
-        {/* Pipeline flow */}
         <div className="relative">
           <div className="flex items-center justify-between relative">
-            {/* connecting line */}
             <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-px bg-white/15" />
             <motion.div
               className="absolute top-1/2 -translate-y-1/2 h-px"
@@ -385,10 +342,6 @@ function PipelineHero() {
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*  Device overview visual (large, non-card)                                */
-/* ------------------------------------------------------------------------ */
-
 function DeviceOverviewVisual() {
   const labels = [
     { icon: Thermometer, title: "SHT40", v1: "4.8°C", v2: "68% RH", pos: "top-6 left-6", delay: 0 },
@@ -410,7 +363,6 @@ function DeviceOverviewVisual() {
         className="relative mt-8 rounded-[28px] h-[420px] overflow-hidden"
         style={{ background: `linear-gradient(180deg, ${COLORS.paperDeep}, #EDE9DA)` }}
       >
-        {/* device silhouette */}
         <motion.div
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] h-[190px] rounded-3xl"
           style={{ backgroundColor: COLORS.forest, boxShadow: "0 40px 80px -30px rgba(11,59,46,0.5)" }}
@@ -460,18 +412,33 @@ function SectionKicker({ label, title, right }: { label: string; title: string; 
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*  Device list + detail                                                    */
-/* ------------------------------------------------------------------------ */
+function DeviceListAndDetail({ devicesList }: { devicesList: Device[] }) {
+  const [selected, setSelected] = useState<Device>(devicesList[0] || {
+    id: "CHL-001",
+    route: "Indore → Delhi",
+    shipment: "Fresh Produce",
+    temp: 4.8,
+    humidity: 68,
+    gps: "Connected",
+    signal: "Excellent",
+    battery: 87,
+    status: "online",
+    lastSync: "3s ago",
+    lat: 24.5,
+    lng: 78.2,
+  });
 
-function DeviceListAndDetail() {
-  const [selected, setSelected] = useState<Device>(DEVICES[0]);
-  const tempSeries = useMemo(() => genSeries(selected.temp, 0.6), [selected.id]);
-  const humSeries = useMemo(() => genSeries(selected.humidity, 3), [selected.id]);
+  useEffect(() => {
+    if (devicesList && devicesList.length > 0) {
+      setSelected((prev) => devicesList.find((d) => d.id === prev.id) || devicesList[0]);
+    }
+  }, [devicesList]);
+
+  const tempSeries = useMemo(() => genSeries(selected.temp, 0.6), [selected.id, selected.temp]);
+  const humSeries = useMemo(() => genSeries(selected.humidity, 3), [selected.id, selected.humidity]);
 
   return (
     <section className="mx-8 mt-16 grid grid-cols-1 xl:grid-cols-[1.5fr_1fr] gap-8">
-      {/* table */}
       <motion.div variants={fadeUp} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-80px" }}>
         <SectionKicker label="Connected Devices" title="Every node, at a glance." />
         <div className="mt-6 rounded-[24px] border bg-white overflow-hidden" style={{ borderColor: COLORS.line }}>
@@ -487,7 +454,7 @@ function DeviceListAndDetail() {
                 </tr>
               </thead>
               <tbody>
-                {DEVICES.map((d) => (
+                {devicesList.map((d) => (
                   <tr
                     key={d.id}
                     onClick={() => setSelected(d)}
@@ -518,7 +485,6 @@ function DeviceListAndDetail() {
         </div>
       </motion.div>
 
-      {/* detail panel */}
       <motion.div variants={fadeUp} custom={1} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-80px" }}>
         <div className="text-[11px] tracking-[0.16em] uppercase mb-2" style={{ color: COLORS.emerald }}>— Selected Device</div>
         <AnimatePresence mode="wait">
@@ -602,10 +568,6 @@ function Sparkline({ data, color, label }: { data: { t: number; v: number }[]; c
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*  Sensor health                                                            */
-/* ------------------------------------------------------------------------ */
-
 function SensorHealth() {
   return (
     <motion.section
@@ -617,7 +579,7 @@ function SensorHealth() {
     >
       <SectionKicker label="Sensor Health" title="Every component, operational." />
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-5 gap-px rounded-[24px] overflow-hidden border" style={{ borderColor: COLORS.line, backgroundColor: COLORS.line }}>
-        {SENSORS.map((s, i) => (
+        {SENSORS.map((s) => (
           <div key={s.id} className="bg-white p-6 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div className="h-10 w-10 rounded-xl grid place-items-center" style={{ backgroundColor: COLORS.emeraldSoft }}>
@@ -636,10 +598,6 @@ function SensorHealth() {
     </motion.section>
   );
 }
-
-/* ------------------------------------------------------------------------ */
-/*  Activity timeline                                                        */
-/* ------------------------------------------------------------------------ */
 
 function ActivityTimeline() {
   const [events, setEvents] = useState(ACTIVITY_SEED);
@@ -690,10 +648,6 @@ function ActivityTimeline() {
   );
 }
 
-/* ------------------------------------------------------------------------ */
-/*  Map                                                                      */
-/* ------------------------------------------------------------------------ */
-
 function DeviceMap() {
   return (
     <motion.div
@@ -717,10 +671,6 @@ function DeviceMap() {
     </motion.div>
   );
 }
-
-/* ------------------------------------------------------------------------ */
-/*  Alerts + Commands                                                        */
-/* ------------------------------------------------------------------------ */
 
 function AlertsAndCommands() {
   return (
@@ -781,38 +731,221 @@ function AlertsAndCommands() {
 }
 
 /* ------------------------------------------------------------------------ */
-/*  Page                                                                     */
+/*  Main Page with Dynamic Polling & Add Device Modal                      */
 /* ------------------------------------------------------------------------ */
 
 export default function Devices() {
+  const [deviceData, setDeviceData] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    nodeId: "",
+    name: "",
+    type: "ESP32 SHT40",
+    battery: "90",
+    signal: "-65",
+  });
+
+  const fetchDevices = () => {
+    fetch("http://localhost:5000/api/v1/devices/overview")
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error status: ${res.status}`);
+        return res.json();
+      })
+      .then((res) => {
+        if (res.success && res.data) {
+          setDeviceData(res.data);
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching live device telemetry:", err);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchDevices();
+    const interval = setInterval(fetchDevices, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleCreateDevice = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetch("http://localhost:5000/api/v1/devices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success) {
+          setIsModalOpen(false);
+          setFormData({ nodeId: "", name: "", type: "ESP32 SHT40", battery: "90", signal: "-65" });
+          fetchDevices();
+        }
+      })
+      .catch((err) => console.error("Error creating device:", err));
+  };
+
+  const networkSummary = deviceData?.networkSummary || {
+    totalNodes: 12,
+    onlineNodes: 10,
+    warningNodes: 1,
+    offlineNodes: 1,
+    uptimePercent: "98.2%",
+  };
+
+  // Map API devices array to component Device type format
+  const mappedDevices: Device[] = useMemo(() => {
+    if (!deviceData?.devices || deviceData.devices.length === 0) return [];
+    return deviceData.devices.map((d: any) => ({
+      id: d.nodeId || "CHL-000",
+      route: d.route || d.name || "Cold Chain Transit",
+      shipment: d.type || "Perishable Cargo",
+      temp: typeof d.temperature === "number" ? d.temperature : 4.5,
+      humidity: typeof d.humidity === "number" ? d.humidity : 65,
+      gps: d.status === "Offline" ? "Lost" : d.status === "Warning" ? "Weak" : "Connected",
+      signal: d.status === "Offline" ? "Poor" : "Excellent",
+      battery: d.battery ?? 85,
+      status: (d.status || "online").toLowerCase() as DeviceStatus,
+      lastSync: d.lastPing || "Just now",
+      lat: d.lat || 22.5,
+      lng: d.lng || 78.5,
+    }));
+  }, [deviceData]);
+
+  if (loading && !deviceData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: COLORS.paper }}>
+        <p className="text-sm font-semibold tracking-wider text-emerald-900 animate-pulse">
+          Connecting to IoT Sensor Network...
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: COLORS.paper }}>
-      <TitleBar />
-      <PipelineHero />
+    <div className="min-h-screen relative" style={{ backgroundColor: COLORS.paper }}>
+      <TitleBar onAddClick={() => setIsModalOpen(true)} />
+      <PipelineHero summary={networkSummary} />
       <DeviceOverviewVisual />
-      <DeviceListAndDetail />
+      <DeviceListAndDetail devicesList={mappedDevices} />
       <SensorHealth />
       <section className="mx-8 mt-16 grid grid-cols-1 xl:grid-cols-2 gap-8">
         <ActivityTimeline />
         <DeviceMap />
       </section>
       <AlertsAndCommands />
+
       <footer className="mx-8 mt-20 py-8 border-t text-center text-[11px]" style={{ borderColor: COLORS.line, color: COLORS.inkSoft }}>
         ChillChain AI · SHT40 + ESP8266 + AI Risk Engine — hackathon build
       </footer>
+
+      {/* ADD DEVICE MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div
+            className="w-full max-w-md rounded-3xl p-8 relative shadow-2xl bg-white"
+            style={{ border: `1px solid ${COLORS.line}` }}
+          >
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-6 right-6 text-stone-400 hover:text-stone-800 transition-colors cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+
+            <h3
+              style={{
+                ...fontDisplay,
+                fontSize: 22,
+                color: COLORS.ink,
+                fontWeight: 600,
+              }}
+            >
+              Add New Sensor Node
+            </h3>
+            <p className="text-xs text-stone-500 mt-1 mb-6">
+              Register a new IoT hardware telemetry unit on the network.
+            </p>
+
+            <form onSubmit={handleCreateDevice} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">Node ID</label>
+                <input
+                  type="text"
+                  placeholder="e.g. CHL-013 or DEV-1005"
+                  required
+                  value={formData.nodeId}
+                  onChange={(e) => setFormData({ ...formData, nodeId: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">Device Name / Route</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Bhopal → Gwalior Pod"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">Sensor Type</label>
+                <select
+                  value={formData.type}
+                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                >
+                  <option value="ESP32 SHT40">ESP32 SHT40</option>
+                  <option value="ESP32 LIS3DH">ESP32 LIS3DH</option>
+                  <option value="NEO-6M GPS">NEO-6M GPS</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">Battery (%)</label>
+                  <input
+                    type="number"
+                    placeholder="90"
+                    required
+                    value={formData.battery}
+                    onChange={(e) => setFormData({ ...formData, battery: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">Signal (dBm)</label>
+                  <input
+                    type="number"
+                    placeholder="-65"
+                    required
+                    value={formData.signal}
+                    onChange={(e) => setFormData({ ...formData, signal: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full text-white font-semibold py-3 rounded-xl mt-4 text-sm transition-transform hover:-translate-y-0.5 cursor-pointer"
+                style={{ backgroundColor: COLORS.forest }}
+              >
+                Register Device
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-/**
- * NOTE — one-time global setup (not part of this component):
- *
- * 1. Fonts — add to your root HTML head or _document:
- *    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,400..600&display=swap" rel="stylesheet" />
- *    Geist Mono ships via `npm i geist` (Vercel) or swap for JetBrains Mono from Google Fonts.
- *
- * 2. Leaflet CSS — import once in your app entry:
- *    import "leaflet/dist/leaflet.css";
- *
- * 3. Leaflet default marker icons aren't used here (CircleMarker only), so no icon-path patching is required.
- */
