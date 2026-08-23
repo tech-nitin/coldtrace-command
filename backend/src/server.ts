@@ -1,11 +1,14 @@
+import dotenv from 'dotenv';
+dotenv.config(); // MUST BE ON LINE 1 BEFORE ROUTE IMPORTS
+
 import express, { Request, Response } from 'express';
 import http from 'http';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import { connectDB } from './config/db.js';
 import { socketService } from './services/socket.service.js';
 import Shipment from './models/Shipment.js';
+
 
 // Route imports
 import telemetryRoutes from './routes/telemetry.routes.js';
@@ -15,8 +18,9 @@ import alertRoutes from './routes/alert.routes.js';
 import shipmentRoutes from './routes/shipment.routes.js';
 import aiRoutes from './routes/ai.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
-
-dotenv.config();
+import riskSpoilageRoutes from './routes/riskSpoilage.routes.js';
+import storageRoutes from './routes/storage.routes.js';
+import deviceRoutes from './routes/device.routes.js';
 
 const app = express();
 const server = http.createServer(app);
@@ -34,9 +38,11 @@ app.use('/api/v1/telemetry', telemetryRoutes);
 app.use('/api/v1/ai', aiRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/map', mapRoutes);
-// app.use('/api/v1/alerts', alertRoutes);
 app.use('/api/v1/analytics', analyticsRoutes);
 app.use('/api/v1/ai-insights', aiRoutes);
+app.use('/api/v1', riskSpoilageRoutes);
+app.use('/api/v1', storageRoutes);
+app.use('/api/v1', deviceRoutes);
 
 // Health Check Endpoint
 app.get('/health', (_req: Request, res: Response) => {
@@ -103,7 +109,6 @@ const defaultShipments = [
   }
 ];
 
-// Seed fallback function
 const seedIfEmpty = async () => {
   try {
     const count = await Shipment.countDocuments();
@@ -116,7 +121,6 @@ const seedIfEmpty = async () => {
   }
 };
 
-// Drop legacy indexes causing E11000 duplicate key errors
 const cleanupProblematicIndexes = async () => {
   try {
     await mongoose.connection.collection('shipments').dropIndex('sensorDeviceId_1');
@@ -126,7 +130,6 @@ const cleanupProblematicIndexes = async () => {
   }
 };
 
-// Connect to DB, cleanup indexes, seed if empty, and start HTTP server
 connectDB().then(async () => {
   await cleanupProblematicIndexes();
   await seedIfEmpty();
