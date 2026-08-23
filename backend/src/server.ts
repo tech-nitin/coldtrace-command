@@ -6,6 +6,17 @@ import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import { socketService } from "./services/socket.service.js";
 import Shipment from "./models/Shipment.js";
+import dotenv from 'dotenv';
+dotenv.config(); // MUST BE ON LINE 1 BEFORE ROUTE IMPORTS
+
+import express, { Request, Response } from 'express';
+import http from 'http';
+import cors from 'cors';
+import mongoose from 'mongoose';
+import { connectDB } from './config/db.js';
+import { socketService } from './services/socket.service.js';
+import Shipment from './models/Shipment.js';
+
 
 // Route imports
 import telemetryRoutes from "./routes/telemetry.routes.js";

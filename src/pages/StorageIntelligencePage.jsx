@@ -20,10 +20,12 @@ import {
   ArrowRight,
   ShieldAlert,
   Radar,
+  Plus,
+  X,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
-/*  Design tokens (kept local — swap for your theme vars in-project)  */
+/*  Design tokens                                                     */
 /* ------------------------------------------------------------------ */
 const C = {
   cream: "#F7F3E9",
@@ -42,119 +44,6 @@ const C = {
   redSoft: "#FBE9E4",
   border: "rgba(23,52,37,0.09)",
 };
-
-/* ------------------------------------------------------------------ */
-/*  Mock data                                                          */
-/* ------------------------------------------------------------------ */
-const ZONES = [
-  {
-    id: "A",
-    name: "Storage Zone A",
-    product: "Fresh Vegetables",
-    temp: 4.2,
-    humidity: 72,
-    risk: 14,
-    status: "healthy",
-    spark: [3.8, 4.0, 3.9, 4.1, 4.0, 4.2, 4.1, 4.2],
-  },
-  {
-    id: "B",
-    name: "Storage Zone B",
-    product: "Dairy Products",
-    temp: 3.6,
-    humidity: 68,
-    risk: 9,
-    status: "healthy",
-    spark: [3.4, 3.5, 3.7, 3.6, 3.5, 3.6, 3.7, 3.6],
-  },
-  {
-    id: "C",
-    name: "Storage Zone C",
-    product: "Frozen Food",
-    temp: -18.4,
-    humidity: 54,
-    risk: 5,
-    status: "healthy",
-    spark: [-18.6, -18.5, -18.3, -18.4, -18.5, -18.4, -18.3, -18.4],
-  },
-  {
-    id: "D",
-    name: "Storage Zone D",
-    product: "Fresh Fruits",
-    temp: 7.6,
-    humidity: 89,
-    risk: 82,
-    status: "critical",
-    spark: [4.6, 5.1, 5.8, 6.4, 6.9, 7.1, 7.4, 7.6],
-  },
-  {
-    id: "E",
-    name: "Storage Zone E",
-    product: "Meat & Poultry",
-    temp: 2.4,
-    humidity: 81,
-    risk: 46,
-    status: "warning",
-    spark: [1.8, 2.0, 1.9, 2.2, 2.1, 2.3, 2.2, 2.4],
-  },
-  {
-    id: "F",
-    name: "Storage Zone F",
-    product: "Pharmaceuticals",
-    temp: 5.1,
-    humidity: 58,
-    risk: 11,
-    status: "healthy",
-    spark: [5.0, 5.2, 5.1, 5.0, 5.1, 5.2, 5.0, 5.1],
-  },
-];
-
-const TEMP_SERIES = [
-  { t: "00:00", v: 3.4 },
-  { t: "02:00", v: 3.6 },
-  { t: "04:00", v: 3.3 },
-  { t: "06:00", v: 3.5 },
-  { t: "08:00", v: 3.9 },
-  { t: "10:00", v: 4.2 },
-  { t: "12:00", v: 4.6 },
-  { t: "14:00", v: 6.8 },
-  { t: "16:00", v: 8.2 },
-  { t: "18:00", v: 5.4 },
-  { t: "20:00", v: 3.9 },
-  { t: "22:00", v: 3.5 },
-  { t: "23:59", v: 3.4 },
-];
-
-const EVENTS = [
-  {
-    icon: AlertTriangle,
-    tone: "red",
-    title: "Temperature alert detected",
-    detail: "Storage Zone D · 7.6°C, 3.6°C above safe ceiling",
-    time: "3 min ago",
-  },
-  {
-    icon: Droplets,
-    tone: "amber",
-    title: "Humidity increased",
-    detail: "Storage Zone D · relative humidity climbed to 89%",
-    time: "12 min ago",
-  },
-  {
-    icon: RefreshCw,
-    tone: "muted",
-    title: "Sensor data synchronized",
-    detail: "All zones · SHT40 + LIS3DH heartbeat confirmed",
-    time: "28 min ago",
-  },
-  {
-    icon: CheckCircle2,
-    tone: "emerald",
-    title: "Cooling system stabilized",
-    detail: "Storage Zone E · compressor cycle back to nominal",
-    time: "41 min ago",
-  },
-];
 
 const STATUS_META = {
   healthy: { label: "Healthy", color: C.emerald, bg: C.emeraldSoft },
@@ -210,7 +99,8 @@ function CountUp({ value, decimals = 0, suffix = "", duration = 1300, start }) {
   );
 }
 
-function Sparkline({ data, color, width = 92, height = 30 }) {
+function Sparkline({ data = [], color, width = 92, height = 30 }) {
+  if (!data || data.length === 0) return null;
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
@@ -245,7 +135,7 @@ function Sparkline({ data, color, width = 92, height = 30 }) {
   );
 }
 
-function RiskGauge({ value, size = 128, animate }) {
+function RiskGauge({ value = 0, size = 128, animate }) {
   const stroke = 10;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -306,7 +196,7 @@ function RiskGauge({ value, size = 128, animate }) {
             marginTop: 4,
           }}
         >
-          HIGH RISK
+          {value >= 70 ? "HIGH RISK" : value >= 40 ? "ELEVATED" : "LOW RISK"}
         </span>
       </div>
     </div>
@@ -345,17 +235,18 @@ function CustomTooltip({ active, payload, label }) {
       }}
     >
       <div style={{ opacity: 0.6, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontWeight: 600 }}>{payload[0].value.toFixed(1)}°C</div>
+      <div style={{ fontWeight: 600 }}>{Number(payload[0].value).toFixed(1)}°C</div>
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Zone card                                                          */
+/*  Zone card                                                         */
 /* ------------------------------------------------------------------ */
 function ZoneCard({ zone, index }) {
-  const meta = STATUS_META[zone.status];
-  const isCritical = zone.status === "critical";
+  const statusKey = (zone.status || "healthy").toLowerCase();
+  const meta = STATUS_META[statusKey] || STATUS_META.healthy;
+  const isCritical = statusKey === "critical";
   return (
     <Reveal delay={index * 70}>
       <div
@@ -379,9 +270,9 @@ function ZoneCard({ zone, index }) {
                 fontWeight: 600,
               }}
             >
-              {zone.name}
+              {zone.zoneId}
             </div>
-            <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{zone.product}</div>
+            <div style={{ fontSize: 13, color: C.muted, marginTop: 2 }}>{zone.category}</div>
           </div>
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 shrink-0"
@@ -419,7 +310,7 @@ function ZoneCard({ zone, index }) {
                   fontWeight: 600,
                 }}
               >
-                {zone.temp}°C
+                {zone.temperature}°C
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -436,7 +327,7 @@ function ZoneCard({ zone, index }) {
               </span>
             </div>
           </div>
-          <Sparkline data={zone.spark} color={meta.color} />
+          <Sparkline data={zone.sparklineData} color={meta.color} />
         </div>
 
         <div>
@@ -452,7 +343,7 @@ function ZoneCard({ zone, index }) {
                 fontWeight: 700,
               }}
             >
-              {zone.risk}%
+              {zone.spoilageRisk}%
             </span>
           </div>
           <div
@@ -463,7 +354,7 @@ function ZoneCard({ zone, index }) {
               className="risk-bar"
               style={{
                 height: "100%",
-                width: `${zone.risk}%`,
+                width: `${zone.spoilageRisk}%`,
                 background: meta.color,
                 borderRadius: 999,
               }}
@@ -476,9 +367,9 @@ function ZoneCard({ zone, index }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Hero visual — abstract connected cold-storage network              */
+/*  Hero visual                                                       */
 /* ------------------------------------------------------------------ */
-function HeroVisual({ start }) {
+function HeroVisual({ activeZonesCount = 6 }) {
   const nodes = [
     { x: 60, y: 46, r: 5, critical: false },
     { x: 150, y: 30, r: 6, critical: false },
@@ -554,7 +445,7 @@ function HeroVisual({ start }) {
             color: "rgba(255,255,255,0.7)",
           }}
         >
-          6 ZONES LIVE
+          {activeZonesCount} ZONES LIVE
         </span>
       </div>
       <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
@@ -586,19 +477,138 @@ function HeroVisual({ start }) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main page                                                          */
+/*  Main page                                                         */
 /* ------------------------------------------------------------------ */
 export default function StorageIntelligencePage() {
   const [mounted, setMounted] = useState(false);
+  const [storageData, setStorageData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [gaugeRef, gaugeInView] = useInView(0.3);
 
+  // New Zone Modal Form State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    zoneId: "",
+    category: "",
+    temperature: "",
+    humidity: "",
+    productSensitivity: "Medium",
+  });
+
+  const fetchStorage = () => {
+    fetch("http://localhost:5000/api/v1/storage/overview")
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success && res.data) {
+          setStorageData(res.data);
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching storage overview:", err);
+        setLoading(false);
+      });
+  };
+
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 80);
-    return () => clearTimeout(t);
+    fetchStorage();
+    const timer = setTimeout(() => setMounted(true), 80);
+    const interval = setInterval(fetchStorage, 5000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, []);
 
+  const handleCreateZone = (e) => {
+    e.preventDefault();
+    fetch("http://localhost:5000/api/v1/storage/zones", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success) {
+          setIsModalOpen(false);
+          setFormData({ zoneId: "", category: "", temperature: "", humidity: "", productSensitivity: "Medium" });
+          fetchStorage();
+        }
+      })
+      .catch((err) => console.error("Error creating storage zone:", err));
+  };
+
+  if (loading) {
+    return (
+      <div style={{ background: C.cream, minHeight: "100vh" }} className="w-full flex items-center justify-center">
+        <p className="font-serif text-lg text-emerald-900">Loading live storage telemetry...</p>
+      </div>
+    );
+  }
+
+  const summary = storageData?.summary || { activeZones: 6, inventoryProtectedTons: "18.4T", highRiskZonesCount: 2 };
+  const zonesList = storageData?.zones || [];
+  const alertZone = storageData?.aiElevatedRiskAlert || {
+    zoneId: "Storage Zone D",
+    category: "Fresh Fruits",
+    spoilageRisk: 82,
+    temperature: 7.6,
+    humidity: 89,
+    exposureTime: "2h 18m",
+    productSensitivity: "High",
+    recommendedAction: "Move sensitive inventory away from Storage Zone D and inspect its cooling system."
+  };
+
+  const tempSeries = [
+    { t: "00:00", v: 3.4 },
+    { t: "02:00", v: 3.6 },
+    { t: "04:00", v: 3.3 },
+    { t: "06:00", v: 3.5 },
+    { t: "08:00", v: 3.9 },
+    { t: "10:00", v: 4.2 },
+    { t: "12:00", v: 4.6 },
+    { t: "14:00", v: 6.8 },
+    { t: "16:00", v: alertZone.temperature },
+    { t: "18:00", v: 5.4 },
+    { t: "20:00", v: 3.9 },
+    { t: "22:00", v: 3.5 },
+    { t: "23:59", v: 3.4 },
+  ];
+
+  const events = [
+    {
+      icon: AlertTriangle,
+      tone: "red",
+      title: "Temperature alert detected",
+      detail: `${alertZone.zoneId} · ${alertZone.temperature}°C, above safe ceiling`,
+      time: "3 min ago",
+    },
+    {
+      icon: Droplets,
+      tone: "amber",
+      title: "Humidity increased",
+      detail: `${alertZone.zoneId} · relative humidity climbed to ${alertZone.humidity}%`,
+      time: "12 min ago",
+    },
+    {
+      icon: RefreshCw,
+      tone: "muted",
+      title: "Sensor data synchronized",
+      detail: "All zones · SHT40 + LIS3DH heartbeat confirmed",
+      time: "28 min ago",
+    },
+    {
+      icon: CheckCircle2,
+      tone: "emerald",
+      title: "Cooling system stabilized",
+      detail: "Storage Zone E · compressor cycle back to nominal",
+      time: "41 min ago",
+    },
+  ];
+
   return (
-    <div style={{ background: C.cream, minHeight: "100%" }} className="w-full">
+    <div style={{ background: C.cream, minHeight: "100%" }} className="w-full relative">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
 
@@ -744,9 +754,9 @@ export default function StorageIntelligencePage() {
 
               <div className="flex items-center gap-8 mt-9 flex-wrap">
                 {[
-                  { value: 6, label: "Active Zones", decimals: 0, suffix: "" },
+                  { value: summary.activeZones ?? 6, label: "Active Zones", decimals: 0, suffix: "" },
                   { value: 18.4, label: "Inventory Protected", decimals: 1, suffix: "T" },
-                  { value: 2, label: "High-Risk Zones", decimals: 0, suffix: "" },
+                  { value: summary.highRiskZonesCount ?? 2, label: "High-Risk Zones", decimals: 0, suffix: "" },
                 ].map((m, i) => (
                   <div key={i}>
                     <div
@@ -765,9 +775,21 @@ export default function StorageIntelligencePage() {
               </div>
             </div>
           </Reveal>
-          <Reveal delay={150}>
-            <HeroVisual start={mounted} />
-          </Reveal>
+
+          <div className="flex flex-col items-end gap-6">
+            <Reveal delay={150}>
+              <HeroVisual start={mounted} activeZonesCount={summary.activeZones} />
+            </Reveal>
+
+            {/* ADD ZONE TRIGGER BUTTON */}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full px-5 py-3 font-semibold text-sm transition-transform hover:-translate-y-0.5 shadow-md"
+              style={{ background: C.forest, color: "#FFFFFF" }}
+            >
+              <Plus size={16} strokeWidth={2.4} /> Add Storage Zone
+            </button>
+          </div>
         </div>
 
         {/* ---------------- ZONE OVERVIEW ---------------- */}
@@ -785,8 +807,8 @@ export default function StorageIntelligencePage() {
             </h2>
           </Reveal>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-7">
-            {ZONES.map((z, i) => (
-              <ZoneCard zone={z} index={i} key={z.id} />
+            {zonesList.map((z, i) => (
+              <ZoneCard zone={z} index={i} key={z.zoneId || i} />
             ))}
           </div>
         </section>
@@ -820,10 +842,10 @@ export default function StorageIntelligencePage() {
                 className="flex flex-col items-center justify-center gap-3 p-8"
                 style={{ minWidth: 220 }}
               >
-                <RiskGauge value={82} animate={gaugeInView} />
+                <RiskGauge value={alertZone.spoilageRisk} animate={gaugeInView} />
                 <div className="flex items-center gap-1.5" style={{ color: "rgba(255,255,255,0.55)" }}>
                   <ShieldAlert size={13} />
-                  <span style={{ fontSize: 11.5 }}>Storage Zone D</span>
+                  <span style={{ fontSize: 11.5 }}>{alertZone.zoneId}</span>
                 </div>
               </div>
 
@@ -843,10 +865,10 @@ export default function StorageIntelligencePage() {
                   KEY FACTORS
                 </span>
                 {[
-                  { label: "Temperature", value: "7.6°C" },
-                  { label: "Humidity", value: "89%" },
-                  { label: "Exposure", value: "2h 18m" },
-                  { label: "Product Sensitivity", value: "High" },
+                  { label: "Temperature", value: `${alertZone.temperature}°C` },
+                  { label: "Humidity", value: `${alertZone.humidity}%` },
+                  { label: "Exposure", value: alertZone.exposureTime || "2h 18m" },
+                  { label: "Product Sensitivity", value: alertZone.productSensitivity || "High" },
                 ].map((f, i) => (
                   <div key={i} className="flex items-center justify-between">
                     <span style={{ fontSize: 13.5, color: "rgba(255,255,255,0.65)" }}>{f.label}</span>
@@ -873,8 +895,7 @@ export default function StorageIntelligencePage() {
                   </span>
                 </div>
                 <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", lineHeight: 1.55, maxWidth: 280 }}>
-                  Move sensitive inventory away from Storage Zone D and inspect its
-                  cooling system.
+                  {alertZone.recommendedAction}
                 </p>
                 <button
                   className="inline-flex items-center gap-2 rounded-full mt-1 self-start"
@@ -891,7 +912,7 @@ export default function StorageIntelligencePage() {
                   onMouseEnter={(e) => (e.currentTarget.style.transform = "translateX(2px)")}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = "translateX(0)")}
                 >
-                  Review Zone D <ArrowRight size={14} />
+                  Review {alertZone.zoneId} <ArrowRight size={14} />
                 </button>
               </div>
             </div>
@@ -928,7 +949,7 @@ export default function StorageIntelligencePage() {
 
               <div style={{ width: "100%", height: 260, marginTop: 18 }}>
                 <ResponsiveContainer>
-                  <AreaChart data={TEMP_SERIES} margin={{ top: 10, right: 10, left: -18, bottom: 0 }}>
+                  <AreaChart data={tempSeries} margin={{ top: 10, right: 10, left: -18, bottom: 0 }}>
                     <defs>
                       <linearGradient id="tempFill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="0%" stopColor={C.forestLine} stopOpacity={0.28} />
@@ -949,7 +970,6 @@ export default function StorageIntelligencePage() {
                       tickLine={false}
                       width={30}
                     />
-                    {/* safe band 2-8 */}
                     <ReferenceLine y={2} stroke="transparent" />
                     <ReferenceLine
                       y={9}
@@ -1044,7 +1064,7 @@ export default function StorageIntelligencePage() {
                 boxShadow: "0 1px 2px rgba(23,52,37,0.04), 0 8px 22px rgba(23,52,37,0.05)",
               }}
             >
-              {EVENTS.map((ev, i) => {
+              {events.map((ev, i) => {
                 const toneColor =
                   ev.tone === "red" ? C.red : ev.tone === "amber" ? C.amber : ev.tone === "emerald" ? C.emerald : C.muted;
                 const toneBg =
@@ -1055,7 +1075,7 @@ export default function StorageIntelligencePage() {
                     key={i}
                     className="flex items-center gap-4 px-6 py-4"
                     style={{
-                      borderBottom: i < EVENTS.length - 1 ? `1px solid ${C.border}` : "none",
+                      borderBottom: i < events.length - 1 ? `1px solid ${C.border}` : "none",
                     }}
                   >
                     <div
@@ -1085,6 +1105,110 @@ export default function StorageIntelligencePage() {
           </Reveal>
         </section>
       </div>
+
+      {/* ---------------- ADD STORAGE ZONE MODAL ---------------- */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div
+            className="w-full max-w-md rounded-3xl p-8 relative shadow-2xl"
+            style={{ background: C.card, border: `1px solid ${C.border}` }}
+          >
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="absolute top-6 right-6 text-stone-400 hover:text-stone-800 transition-colors"
+            >
+              <X size={20} />
+            </button>
+
+            <h3
+              style={{
+                fontFamily: "'Fraunces', serif",
+                fontSize: 22,
+                color: C.ink,
+                fontWeight: 600,
+              }}
+            >
+              Add New Storage Zone
+            </h3>
+            <p className="text-xs text-stone-500 mt-1 mb-6">
+              Create a new monitored zone card in your telemetry system.
+            </p>
+
+            <form onSubmit={handleCreateZone} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">Zone Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Storage Zone G"
+                  required
+                  value={formData.zoneId}
+                  onChange={(e) => setFormData({ ...formData, zoneId: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">Category / Cargo</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Exotic Fruits"
+                  required
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">Temp (°C)</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    placeholder="4.5"
+                    required
+                    value={formData.temperature}
+                    onChange={(e) => setFormData({ ...formData, temperature: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-stone-600 mb-1">Humidity (%)</label>
+                  <input
+                    type="number"
+                    placeholder="70"
+                    required
+                    value={formData.humidity}
+                    onChange={(e) => setFormData({ ...formData, humidity: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">Product Sensitivity</label>
+                <select
+                  value={formData.productSensitivity}
+                  onChange={(e) => setFormData({ ...formData, productSensitivity: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl border border-stone-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-800"
+                >
+                  <option value="Low">Low</option>
+                  <option value="Medium">Medium</option>
+                  <option value="High">High</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full text-white font-semibold py-3 rounded-xl mt-4 text-sm transition-transform hover:-translate-y-0.5"
+                style={{ background: C.forest }}
+              >
+                Save Storage Zone
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

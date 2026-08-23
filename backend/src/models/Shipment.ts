@@ -1,48 +1,21 @@
-import { Schema, model, Document } from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-export interface IShipment extends Document {
-  shipmentId: string;
-  cargoType: string;
-  origin: string;
-  destination: string;
-  status: 'HEALTHY' | 'AT_RISK' | 'CRITICAL';
-  aiRiskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
-  eta: Date;
-  sensorDeviceId: string;
-  currentLocation: {
-    type: string;
-    coordinates: number[]; // [lng, lat]
-  };
-  thresholds: {
-    maxTemp: number;
-    minTemp: number;
-    maxHumidity: number;
-  };
-}
-
-const shipmentSchema = new Schema<IShipment>(
+const ShipmentSchema: Schema = new Schema(
   {
-    shipmentId: { type: String, required: true, unique: true },
-    cargoType: { type: String, required: true },
+    shipmentId: { type: String, required: true },
+    cargo: { type: String },
+    cargoType: { type: String },
     origin: { type: String, required: true },
     destination: { type: String, required: true },
-    status: { type: String, enum: ['HEALTHY', 'AT_RISK', 'CRITICAL'], default: 'HEALTHY' },
-    aiRiskLevel: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'LOW' },
-    eta: { type: Date, required: true },
-    sensorDeviceId: { type: String, required: true, unique: true },
-    currentLocation: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number], required: true },
-    },
-    thresholds: {
-      maxTemp: { type: Number, required: true },
-      minTemp: { type: Number, required: true },
-      maxHumidity: { type: Number, required: true },
-    },
+    tempLimit: { type: String },
+    humidityLimit: { type: String },
+    currentTemp: { type: Number, default: 4.5 },
+    currentHumidity: { type: Number, default: 65.0 },
+    healthIndex: { type: Number, default: 100 },
+    status: { type: String, default: 'HEALTHY' },
+    aiRiskLevel: { type: String, default: 'low' },
   },
   { timestamps: true }
 );
 
-shipmentSchema.index({ currentLocation: '2dsphere' });
-
-export default model<IShipment>('Shipment', shipmentSchema);
+export default mongoose.models.Shipment || mongoose.model('Shipment', ShipmentSchema);
