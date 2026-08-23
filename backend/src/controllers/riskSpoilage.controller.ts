@@ -1,263 +1,181 @@
-// backend/src/controllers/riskSpoilage.controller.ts
+// backend/src/controllers/storage.controller.ts
 import { Request, Response } from 'express';
-import Shipment from '../models/Shipment';
-import { Telemetry } from '../models/Telemetry';
+import StorageZone from '../models/StorageZone.js';
 
-// Helper function to safely parse temperature thresholds (e.g. "-18°C", "2-8°C", "5")
-const parseMaxAllowedTemp = (tempLimitStr?: string, defaultLimit = 5.0): number => {
-  if (!tempLimitStr) return defaultLimit;
-  const matches = tempLimitStr.match(/-?\d+(\.\d+)?/g);
-  if (!matches || matches.length === 0) return defaultLimit;
-  const nums = matches.map(Number);
-  return Math.max(...nums);
-};
-
-export const getRiskSpoilageData = async (req: Request, res: Response) => {
-  try {
-    const activeShipments = await Shipment.find({});
-
-    if (!activeShipments || activeShipments.length === 0) {
-      return res.status(200).json({
-        success: true,
-        data: {
-          summary: { activeShipments: 0, atRisk: 0, critical: 0, predictedLoss: 0, riskScore: 0 },
-          attentionShipments: []
-        }
-      });
-    }
-
-    const shipmentRiskList = await Promise.all(
-      activeShipments.map(async (shipment) => {
-        const latestTelemetry = await Telemetry.findOne({ shipmentId: shipment.shipmentId })
-          .sort({ timestamp: -1 });
-
-        const currentTemp = latestTelemetry ? latestTelemetry.temperature : (shipment.currentTemp ?? 4.0);
-        const currentHumidity = latestTelemetry ? latestTelemetry.humidity : (shipment.currentHumidity ?? 60.0);
-
-        const maxAllowedTemp = parseMaxAllowedTemp(shipment.tempLimit, 5.0);
-        const tempExcursion = Math.max(0, currentTemp - maxAllowedTemp);
-
-        let calculatedRisk = 5;
-        if (tempExcursion > 0) {
-          calculatedRisk += Math.round(tempExcursion * 12);
-        }
-
-        if (shipment.healthIndex && shipment.healthIndex < 100 && shipment.healthIndex > 0) {
-          calculatedRisk += Math.round((100 - shipment.healthIndex) * 0.4);
-        }
-
-        calculatedRisk = Math.min(Math.max(calculatedRisk, 5), 99);
-
-        let status = 'MONITORING';
-        let timeToCritical = '—';
-
-        if (calculatedRisk >= 75 || shipment.aiRiskLevel === 'high') {
-          status = 'CRITICAL';
-          timeToCritical = '1h 24m';
-        } else if (calculatedRisk >= 40 || shipment.aiRiskLevel === 'medium') {
-          status = 'WARNING';
-          timeToCritical = '3h 10m';
-        }
-
-        return {
-          id: shipment.shipmentId,
-          product: shipment.cargo || shipment.cargoType || 'Perishable Cargo',
-          route: `${shipment.origin} – ${shipment.destination}`,
-          riskScore: calculatedRisk,
-          trend: tempExcursion > 0 ? 'Increasing' : 'Stable',
-          timeToCritical,
-          status,
-          currentTemp,
-          maxAllowedTemp,
-          tempExcursion,
-          currentHumidity
-        };
-      })
-    );
-
-    shipmentRiskList.sort((a, b) => b.riskScore - a.riskScore);
-
-    const totalActive = shipmentRiskList.length;
-    const criticalShipments = shipmentRiskList.filter((s) => s.status === 'CRITICAL');
-    const warningShipments = shipmentRiskList.filter((s) => s.status === 'WARNING');
-    const atRiskCount = criticalShipments.length + warningShipments.length;
-
-    const totalRiskSum = shipmentRiskList.reduce((acc, s) => acc + s.riskScore, 0);
-    const avgRiskScore = Math.round(totalRiskSum / (totalActive || 1));
-
-    const focusShipment = shipmentRiskList[0];
-
-    const tempExposurePct = Math.min(Math.round((focusShipment.tempExcursion / 4) * 100), 94);
-    const humidityDevPct = Math.min(Math.round((focusShipment.currentHumidity / 100) * 80), 61);
-    const delayDurationPct = Math.min(Math.round(focusShipment.riskScore * 0.5), 41);
-
-    const responsePayload = {
-      summary: {
-        activeShipments: totalActive,
-        atRisk: atRiskCount,
-        critical: criticalShipments.length,
-        predictedLoss: 18500,
-        riskScore: avgRiskScore,
-        riskScoreMax: 100,
-        criticalShipmentsCount: criticalShipments.length,
-        riskTrendPercent: avgRiskScore > 50 ? 23 : 5,
-        confidence: 84,
-        shipmentValueAtRisk: 1228918500
-      },
-      attentionShipments: shipmentRiskList.map(({ currentTemp, maxAllowedTemp, tempExcursion, currentHumidity, ...rest }) => rest),
-      selectedShipmentRiskBreakdown: {
-        shipmentId: focusShipment.id,
-        factors: [
-          { name: 'Temperature Exposure', percentage: Math.max(tempExposurePct, 15) },
-          { name: 'Humidity Deviation', percentage: Math.max(humidityDevPct, 10) },
-          { name: 'Delay Duration', percentage: Math.max(delayDurationPct, 5) }
-        ],
-        aiExplanation: {
-          text: focusShipment.tempExcursion > 0
-            ? `Shipment ${focusShipment.id} has exceeded its recommended threshold of ${focusShipment.maxAllowedTemp}°C. Because ${focusShipment.product.toLowerCase()} cargo is sensitive to temperature variations, ChillChain AI predicts elevated risk.`
-            : `Shipment ${focusShipment.id} is operating safely within nominal limits.`,
-          temperatureDelta: focusShipment.tempExcursion > 0 
-            ? `+${focusShipment.tempExcursion.toFixed(1)}°C above safe range`
-            : `Nominal safe temperature`,
-          aiConfidence: 94
-        }
-      },
-      riskEvolution: {
-        timeline: [
-          { time: 'Current', risk: focusShipment.riskScore },
-          { time: 'In 1 Hour', risk: Math.min(focusShipment.riskScore + 9, 99) },
-          { time: 'In 2 Hours', risk: Math.min(focusShipment.riskScore + 17, 99) }
-        ],
-        criticalThresholdHour: 1.4,
-        predictedOutcome: focusShipment.riskScore > 70 
-          ? 'High probability of quality degradation' 
-          : 'Low to moderate risk',
-        aiConfidence: 94
-      },
-      recommendedActions: {
-        shipmentId: focusShipment.id,
-        actions: [
-          {
-            title: 'Restore cooling immediately',
-            description: `Maintain container temperature below ${focusShipment.maxAllowedTemp}°C.`
-          },
-          {
-            title: 'Inspect refrigeration system',
-            description: 'Verify thermal insulation and cooling performance.'
-          },
-          {
-            title: 'Prioritize delivery',
-            description: 'Reduce remaining transit exposure.'
-          }
-        ],
-        estimatedLossAvoided: 14800
-      }
-    };
-
-    res.status(200).json({ success: true, data: responsePayload });
-  } catch (error: any) {
-    console.error('Error fetching risk spoilage database metrics:', error);
-    res.status(500).json({ success: false, message: error.message });
+// 1. Add 'as const' to status strings so TypeScript treats them as literal types
+const defaultZones = [
+  {
+    zoneId: 'Storage Zone A',
+    category: 'Fresh Vegetables',
+    temperature: 4.2,
+    humidity: 72,
+    spoilageRisk: 14,
+    status: 'Healthy' as const,
+    sparklineData: [10, 12, 11, 15, 14],
+    exposureTime: '0h 45m',
+    productSensitivity: 'Medium',
+    recommendedAction: 'Zone parameters are optimal.'
+  },
+  {
+    zoneId: 'Storage Zone B',
+    category: 'Dairy Products',
+    temperature: 3.6,
+    humidity: 68,
+    spoilageRisk: 9,
+    status: 'Healthy' as const,
+    sparklineData: [8, 9, 8, 10, 9],
+    exposureTime: '0h 20m',
+    productSensitivity: 'High',
+    recommendedAction: 'Temperature within safe threshold.'
+  },
+  {
+    zoneId: 'Storage Zone C',
+    category: 'Frozen Food',
+    temperature: -18.4,
+    humidity: 54,
+    spoilageRisk: 5,
+    status: 'Healthy' as const,
+    sparklineData: [4, 5, 5, 6, 5],
+    exposureTime: '0h 10m',
+    productSensitivity: 'Medium',
+    recommendedAction: 'Sub-zero cooling maintained.'
+  },
+  {
+    zoneId: 'Storage Zone D',
+    category: 'Fresh Fruits',
+    temperature: 7.6,
+    humidity: 89,
+    spoilageRisk: 82,
+    status: 'Critical' as const,
+    sparklineData: [40, 55, 68, 75, 82],
+    exposureTime: '2h 18m',
+    productSensitivity: 'High',
+    recommendedAction: 'Move sensitive inventory away from Storage Zone D and inspect its cooling system.'
+  },
+  {
+    zoneId: 'Storage Zone E',
+    category: 'Meat & Poultry',
+    temperature: 2.4,
+    humidity: 81,
+    spoilageRisk: 46,
+    status: 'Warning' as const,
+    sparklineData: [20, 25, 32, 40, 46],
+    exposureTime: '1h 05m',
+    productSensitivity: 'High',
+    recommendedAction: 'Monitor humidity levels and adjust air circulation.'
+  },
+  {
+    zoneId: 'Storage Zone F',
+    category: 'Pharmaceuticals',
+    temperature: 5.1,
+    humidity: 50,
+    spoilageRisk: 11,
+    status: 'Healthy' as const,
+    sparklineData: [10, 11, 10, 12, 11],
+    exposureTime: '0h 15m',
+    productSensitivity: 'High',
+    recommendedAction: 'Sensors report stable ambient conditions.'
   }
-};
+];
 
-export const getShipmentRiskBreakdown = async (req: Request, res: Response) => {
+export const getStorageOverview = async (_req: Request, res: Response) => {
   try {
-    const { shipmentId } = req.params;
+    let zones: any[] = await StorageZone.find({});
 
-    const shipment = await Shipment.findOne({ shipmentId });
-    if (!shipment) {
-      return res.status(404).json({ success: false, message: 'Shipment not found' });
+    // 2. Seed default zones if collection is totally empty
+    if (zones.length === 0) {
+      zones = await StorageZone.insertMany(defaultZones);
     }
 
-    const latestTelemetry = await Telemetry.findOne({ shipmentId }).sort({ timestamp: -1 });
-    const currentTemp = latestTelemetry ? latestTelemetry.temperature : (shipment.currentTemp ?? 4.0);
-    const currentHumidity = latestTelemetry ? latestTelemetry.humidity : (shipment.currentHumidity ?? 60.0);
-    const maxAllowedTemp = parseMaxAllowedTemp(shipment.tempLimit, 5.0);
+    // 3. Dynamic Summary Calculations
+    const activeZones = zones.length;
+    const highRiskZones = zones.filter(
+      (z) => z.status === 'Critical' || z.status === 'Warning' || z.spoilageRisk >= 40
+    ).length;
 
-    const tempExcursion = Math.max(0, currentTemp - maxAllowedTemp);
-
-    const tempExposurePct = tempExcursion > 0 
-      ? Math.min(98, Math.max(25, Math.round((tempExcursion / 4.0) * 100))) 
-      : 12;
-
-    const humidityDevPct = Math.min(95, Math.max(10, Math.round((Math.abs(currentHumidity - 60) / 30) * 100)));
-    const delayDurationPct = Math.min(90, Math.max(15, Math.round((100 - (shipment.healthIndex ?? 100)) * 0.8 + 10)));
-
-    const cargoName = (shipment.cargo || shipment.cargoType || 'perishable cargo').toLowerCase();
-    
-    const explanationText = tempExcursion > 0
-      ? `Shipment ${shipment.shipmentId} has exceeded its recommended threshold of ${maxAllowedTemp}°C (current reading: ${currentTemp}°C). Because ${cargoName} cargo is sensitive to temperature variations, ChillChain AI predicts elevated risk.`
-      : `Shipment ${shipment.shipmentId} is operating safely within its target limit of ${maxAllowedTemp}°C (current reading: ${currentTemp}°C). Relative humidity remains stable at ${currentHumidity}%.`;
-
-    res.status(200).json({
-      success: true,
-      data: {
-        shipmentId: shipment.shipmentId,
-        factors: [
-          { name: 'Temperature Exposure', percentage: tempExposurePct },
-          { name: 'Humidity Deviation', percentage: humidityDevPct },
-          { name: 'Delay Duration', percentage: delayDurationPct }
-        ],
-        aiExplanation: {
-          text: explanationText,
-          temperatureDelta: tempExcursion > 0 
-            ? `+${tempExcursion.toFixed(1)}°C above safe range`
-            : `Within safe range`,
-          aiConfidence: 94
-        }
-      }
-    });
-  } catch (error: any) {
-    console.error('Error fetching breakdown:', error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// DYNAMIC RECOMMENDED ACTIONS CONTROLLER (PURE MONGODB)
-export const getShipmentRecommendedActions = async (req: Request, res: Response) => {
-  const { shipmentId } = req.params;
-
-  try {
-    const shipment = await Shipment.findOne({ shipmentId });
-    if (!shipment) {
-      return res.status(404).json({ success: false, message: 'Shipment not found' });
-    }
-
-    const latestTelemetry = await Telemetry.findOne({ shipmentId }).sort({ timestamp: -1 });
-    const currentTemp = latestTelemetry ? latestTelemetry.temperature : (shipment.currentTemp ?? 4.0);
-    const currentHumidity = latestTelemetry ? latestTelemetry.humidity : (shipment.currentHumidity ?? 60.0);
-    const cargo = shipment.cargo || shipment.cargoType || 'Perishable Cargo';
-    const origin = shipment.origin || 'Origin';
-    const destination = shipment.destination || 'Destination';
-    const tempLimit = shipment.tempLimit || '4.0°C';
-
-    const tempExcursion = Math.max(0, currentTemp - 5.0);
-    const dynamicLoss = Math.round(12500 + (tempExcursion * 2400) + (shipmentId.charCodeAt(shipmentId.length - 1) * 85));
+    // 4. Dynamically pick the zone with highest spoilage risk for AI Spotlight
+    const elevatedRiskZone = [...zones].sort((a, b) => b.spoilageRisk - a.spoilageRisk)[0];
 
     return res.status(200).json({
       success: true,
       data: {
-        shipmentId,
-        actions: [
-          {
-            title: `Restore cooling for ${cargo}`,
-            description: `Current container temp is ${currentTemp}°C. Maintain reading below ${tempLimit} threshold.`
-          },
-          {
-            title: "Inspect refrigeration unit",
-            description: `Relative humidity is ${currentHumidity}%. Inspect HVAC compressor performance and door seals on ${origin} – ${destination} route.`
-          },
-          {
-            title: "Prioritize transit dispatch",
-            description: `Expedite shipment route from ${origin} to ${destination} to minimize transit exposure.`
-          }
-        ],
-        estimatedLossAvoided: dynamicLoss
+        summary: {
+          activeZones,
+          inventoryProtectedTons: `${(activeZones * 3.1).toFixed(1)}T`,
+          highRiskZonesCount: highRiskZones
+        },
+        zones: zones.map((z) => ({
+          _id: z._id,
+          zoneId: z.zoneId,
+          category: z.category,
+          temperature: z.temperature,
+          humidity: z.humidity,
+          spoilageRisk: z.spoilageRisk,
+          status: z.status,
+          sparklineData: z.sparklineData && z.sparklineData.length > 0 ? z.sparklineData : [z.temperature, z.temperature + 0.2, z.temperature]
+        })),
+        aiElevatedRiskAlert: elevatedRiskZone
+          ? {
+              zoneId: elevatedRiskZone.zoneId,
+              category: elevatedRiskZone.category,
+              spoilageRisk: elevatedRiskZone.spoilageRisk,
+              temperature: elevatedRiskZone.temperature,
+              humidity: elevatedRiskZone.humidity,
+              exposureTime: elevatedRiskZone.exposureTime || '1h 00m',
+              productSensitivity: elevatedRiskZone.productSensitivity || 'Medium',
+              recommendedAction: elevatedRiskZone.recommendedAction || `Monitor thermal status of ${elevatedRiskZone.zoneId}.`
+            }
+          : null
       }
     });
   } catch (error: any) {
-    console.error('Error calculating recommended actions:', error);
+    console.error('Error fetching storage overview:', error);
     return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const createStorageZone = async (req: Request, res: Response) => {
+  try {
+    const { zoneId, category, temperature, humidity, productSensitivity } = req.body;
+
+    if (!zoneId || !category || temperature === undefined || humidity === undefined) {
+      return res.status(400).json({ success: false, message: 'Please provide all required fields.' });
+    }
+
+    const tempNum = Number(temperature);
+    const humidityNum = Number(humidity);
+
+    let status: 'Healthy' | 'Warning' | 'Critical' = 'Healthy';
+    let spoilageRisk = 12;
+
+    if (tempNum > 8.0 || humidityNum > 80) {
+      status = 'Critical';
+      spoilageRisk = Math.min(98, Math.round(tempNum * 9 + 15));
+    } else if (tempNum > 5.0 || humidityNum > 75) {
+      status = 'Warning';
+      spoilageRisk = 48;
+    }
+
+    const newZone = new StorageZone({
+      zoneId,
+      category,
+      temperature: tempNum,
+      humidity: humidityNum,
+      spoilageRisk,
+      status,
+      productSensitivity: productSensitivity || 'Medium',
+      sparklineData: [tempNum - 0.4, tempNum - 0.2, tempNum, tempNum + 0.1, tempNum],
+      exposureTime: '0h 10m',
+      recommendedAction: status === 'Healthy' 
+        ? 'Operating safely within target threshold.' 
+        : `Inspect cooling unit and ventilation for ${zoneId}.`
+    });
+
+    await newZone.save();
+
+    return res.status(201).json({ success: true, data: newZone });
+  } catch (error: any) {
+    console.error('Error creating storage zone:', error);
+    return res.status(400).json({ success: false, message: error.message });
   }
 };
